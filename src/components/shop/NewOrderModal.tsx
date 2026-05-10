@@ -17,6 +17,8 @@ import { isColorKey, splitNameHex } from "@/utils/shop/shopUtils";
 import ConfirmDialog from "@/components/layout/ConfirmDialog";
 import InputTextDialog from "@/components/layout/InputTextDialog";
 import { useUser } from "@/context/UserContext";
+import type { NewOrderModalDict } from "@/types/i18n";
+
 
 interface Props {
   onClose: () => void;
@@ -24,62 +26,7 @@ interface Props {
   products: Product[];
   mode?: "create" | "edit";
   orderToEdit?: Order | null;
-  dict: {
-    new_order_modal: {
-      title_create: string;
-      title_edit: string;
-      user_label: string;
-      user_placeholder: string;
-      user_not_found: string;
-      user_create_new: string;
-      products_label: string;
-      products_placeholder: string;
-      campus_label: string;
-      campus_placeholder: string;
-      campus_alameda: string;
-      campus_taguspark: string;
-      nif_label: string;
-      nif_placeholder: string;
-      phone_label: string;
-      phone_placeholder: string;
-      notes_label: string;
-      notes_placeholder: string;
-      cancel: string;
-      submitting_create: string;
-      submitting_edit: string;
-      submit_create: string;
-      submit_edit: string;
-      confirm_create: string;
-      confirm_edit: string;
-      confirm_stock_override: string;
-      error_no_products: string;
-      error_no_campus: string;
-      error_no_user: string;
-      error_create: string;
-      error_update: string;
-    };
-    create_user_modal: {
-      title: string;
-      ist_id_label: string;
-      ist_id_placeholder: string;
-      name_label: string;
-      name_placeholder: string;
-      email_label: string;
-      email_placeholder: string;
-      cancel: string;
-      submitting: string;
-      submit: string;
-      confirm_message_1: string;
-      confirm_message_2: string;
-      error_required: string;
-      error_create: string;
-    };
-    confirm_dialog: {
-      title: string;
-      confirm: string;
-      cancel: string;
-    };
-  };
+  dict: NewOrderModalDict;
 }
 
 interface SelectedProduct {

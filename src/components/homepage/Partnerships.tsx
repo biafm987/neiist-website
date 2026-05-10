@@ -11,11 +11,11 @@ import styles from "@/styles/components/homepage/Partnerships.module.css";
 import lage2 from "@/assets/partnerships/non-monetary/lage2.png";
 import aiesec from "@/assets/partnerships/non-monetary/aiesec.png";
 import magma from "@/assets/partnerships/non-monetary/magma.png";
+import type { PartnershipsDict } from "@/types/i18n";
+
 
 interface PartnershipsProps {
-  dict: {
-    title: string;
-  };
+  dict: PartnershipsDict;
   
 }
 const Partnerships: React.FC<PartnershipsProps> = ({ dict }) => {

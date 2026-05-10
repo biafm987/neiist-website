@@ -6,19 +6,13 @@ import Image, { type StaticImageData } from "next/image";
 import { FiUsers } from "react-icons/fi";
 import styles from "@/styles/components/about-us/Hero.module.css";
 import { Team } from "@/types/memberships";
+import type { HeroHeroDict } from "@/types/i18n";
+
 
 interface HeroProps {
   teams: Team[];
   teamImage: string | StaticImageData;
-  heroDict: {
-    teams_title: string;
-    description: string;
-    title_segments: string[];
-    title: string;
-    team_label: string;
-    close_label: string;
-    team_image_alt: string;
-  };
+  heroDict: HeroHeroDict;
   description?: string;
 }
 const iconMap: Record<string, React.ElementType> = {

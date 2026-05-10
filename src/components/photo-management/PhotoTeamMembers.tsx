@@ -4,6 +4,8 @@ import { useState, useRef, useMemo } from "react";
 import Image from "next/image";
 import { useUser } from "@/context/UserContext";
 import styles from "@/styles/components/photo-management/PhotoTeamMembers.module.css";
+import type { PhotoTeamMembersDict } from "@/types/i18n";
+
 
 interface Membership {
   id: string;
@@ -25,11 +27,7 @@ interface Department {
 
 interface PhotoTeamMembersProps {
   membersByDepartment: Record<string, Membership[]>;
-  dict: {
-    search_placeholder: string;
-    empty: string;
-    change_photo_title: string;
-  };
+  dict: PhotoTeamMembersDict;
 }
 
 

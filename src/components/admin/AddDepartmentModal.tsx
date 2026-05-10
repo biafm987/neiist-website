@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import styles from "@/styles/components/admin/AddDepartmentModal.module.css";
+import type { AddDepartmentModalDict } from "@/types/i18n";
+
 
 interface Role {
   roleName: string;
@@ -9,36 +11,7 @@ interface Role {
 
 interface AddDepartmentModalProps {
   departmentType: "team" | "admin_body";
-  dict: {
-    add_team_button: string;
-    add_body_button: string;
-    new_team_title: string;
-    new_body_title: string;
-    team_name_placeholder: string;
-    body_name_placeholder: string;
-    team_desc_placeholder: string;
-    next: string;
-    add_roles_title: string;
-    remove: string;
-    back: string;
-    creating: string;
-    create_department: string;
-    errors: {
-      create_department: string;
-      create_role: string;
-      create_department_or_roles: string;
-    };
-    role_form: {
-      role_name_placeholder: string;
-      add_role: string;
-      access: {
-        guest: string;
-        member: string;
-        coordinator: string;
-        admin: string;
-      };
-    };
-  };
+  dict: AddDepartmentModalDict;
 }
 
 export default function AddDepartmentModal({

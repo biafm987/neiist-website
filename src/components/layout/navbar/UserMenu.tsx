@@ -9,22 +9,13 @@ import styles from "@/styles/components/layout/navbar/UserMenu.module.css";
 import { User, UserRole } from "@/types/user";
 import { checkRoles } from "@/types/user";
 import { getFirstAndLastName } from "@/utils/userUtils";
+import type { UserMenuDict } from "@/types/i18n";
+
 
 interface UserMenuProps {
   userData: User;
   logout: () => void;
-  dict: {
-    profile: string;
-    my_orders: string;
-    manage_orders: string;
-    manage_team: string;
-    manage_photos: string;
-    manage_shop: string;
-    manage_users: string;
-    manage_departments: string;
-    logout: string;
-    user_photo_alt: string;
-  };
+  dict: UserMenuDict;
 }
 
 interface MenuPage {

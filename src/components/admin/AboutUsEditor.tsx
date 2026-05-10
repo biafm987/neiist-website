@@ -8,6 +8,8 @@ import { SortableContext, useSortable, arrayMove } from "@dnd-kit/sortable";
 import YearSelector from "@/components/about-us/YearSelector";
 import memberCardStyles from "@/styles/components/about-us/MemberCard.module.css";
 import styles from "@/styles/pages/AboutUs.module.css";
+import type { AboutUsEditorDict } from "@/types/i18n";
+
 
 function getAcademicYearRange(year: string) {
   const [startYear, endYear] = year.split("/").map(Number);
@@ -63,14 +65,7 @@ export default function AboutUsEditor({
   memberships: Membership[];
   users: User[];
   selectedYear: string;
-  dict: {
-    nav_label: string;
-    prev_label: string;
-    next_label: string;
-    title: string;
-    no_member: string;
-    photo_alt: string;
-  };
+  dict: AboutUsEditorDict;
 }) {
   const allAcademicYears = getAllAcademicYears(memberships);
   const [roleOrders, setRoleOrders] = useState<Record<string, string[]>>({});

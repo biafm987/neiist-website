@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import styles from "@/styles/components/shop/MobileFiltersDrawer.module.css";
 import { FiCheck, FiX } from "react-icons/fi";
 import { OrderStatus } from "@/types/shop/orderStatus";
+import type { MobileFiltersDrawerDict } from "@/types/i18n";
+
 
 interface FilterState {
   dateRange: { start: Date | null; end: Date | null };
@@ -21,19 +23,7 @@ interface MobileFiltersDrawerProps {
   availableCampuses: string[];
   availableStatuses: string[];
   getStatusLabel: (_status: OrderStatus) => string;
-  dict: {
-    title: string;
-    close_label: string;
-    date_section: string;
-    until: string;
-    range: string;
-    days: string[];
-    products_section: string;
-    campus_section: string;
-    status_section: string;
-    clear_all: string;
-    apply: string;
-  };
+  dict: MobileFiltersDrawerDict;
   locale: string;
 }
 

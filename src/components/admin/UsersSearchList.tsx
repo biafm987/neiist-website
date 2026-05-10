@@ -5,6 +5,8 @@ import Image from "next/image";
 import { User, UserRole } from "@/types/user";
 import { Membership } from "@/types/memberships";
 import styles from "@/styles/components/admin/UsersSearchList.module.css";
+import type { UsersSearchListDict } from "@/types/i18n";
+
 
 interface Role {
   role_name: string;
@@ -26,16 +28,7 @@ export default function UsersSearchList({
 }: {
   users: UserWithMemberships[];
   roles: Role[];
-  dict: {
-    title: string;
-    search_placeholder: string;
-    empty: string;
-    photo_alt: string;
-    email_label: string;
-    phone_label: string;
-    courses_label: string;
-    teams_label: string;
-  };
+  dict: UsersSearchListDict;
 }) {
   const [search, setSearch] = useState("");
 

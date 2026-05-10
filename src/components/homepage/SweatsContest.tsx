@@ -5,22 +5,11 @@ import Link from "next/link";
 import { useUser } from "@/context/UserContext";
 import styles from "@/styles/components/homepage/SweatsContest.module.css";
 import backgroundImage from "@/assets/background.png";
+import type { SweatsContestDict } from "@/types/i18n";
+
 
 export default function SweatsContest({ dict }: { 
-  dict: {
-    title: string;
-    description_start: string;
-    description_consult: string;
-    description_link: string;
-    description_end: string;
-    button: string;
-    uploading: string;
-    submitted: string;
-    login_warning: string;
-    errors: { 
-      zip_only: string; 
-      upload: string };
-  }
+  dict: SweatsContestDict
 }) {
   const { user } = useUser();
   const [uploading, setUploading] = useState(false);

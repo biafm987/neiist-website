@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import styles from "@/styles/components/shop/ColumnFilter.module.css";
+import type { DateFilterDict } from "@/types/i18n";
+
 
 interface DateFilterProps {
   isOpen: boolean;
@@ -9,12 +11,7 @@ interface DateFilterProps {
   dateRange: { start: Date | null; end: Date | null };
   onChange: (_range: { start: Date | null; end: Date | null }) => void;
   buttonRef: React.RefObject<HTMLButtonElement | null>;
-  dict: {
-    title: string;
-    until: string;
-    range: string;
-    days: string[];
-  };
+  dict: DateFilterDict;
   locale: string;
 }
 

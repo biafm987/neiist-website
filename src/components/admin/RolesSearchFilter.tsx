@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import ConfirmDialog from "@/components/layout/ConfirmDialog";
 import Fuse from "fuse.js";
 import styles from "@/styles/components/admin/RolesSearchFilter.module.css";
+import type { RolesSearchFilterDict } from "@/types/i18n";
+
 
 interface Role {
   role_name: string;
@@ -26,39 +28,7 @@ export default function RolesSearchFilter({
   departments: Department[];
   initialDepartment: string;
   initialRoles: Role[];
-  dict: {
-    title: string;
-    existing_roles_title: string;
-    all: string;
-    search_placeholder: string;
-    active: string;
-    show_inactive: string;
-    empty_all: string;
-    empty_select: string;
-    active_badge: string;
-    inactive_badge: string;
-    remove: string;
-    add_role_title: string;
-    role_name_placeholder: string;
-    adding: string;
-    add_role: string;
-    confirm_remove: string;
-    access: {
-        guest: string;
-        member: string;
-        shop_manager: string;
-        coordinator: string;
-        admin: string;
-    };
-    errors: {
-        add_role: string;
-        remove_role: string;
-    };
-    confirm_dialog: {
-      confirm: string;
-      cancel: string;
-    };
-  };
+  dict: RolesSearchFilterDict;
 }) {
   const [roles, setRoles] = useState<Role[]>(initialRoles);
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");

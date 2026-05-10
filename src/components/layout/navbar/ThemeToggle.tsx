@@ -4,12 +4,11 @@ import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { FiSun, FiMoon } from "react-icons/fi";
 import styles from "@/styles/components/layout/navbar/ThemeToggle.module.css";
+import type { ThemeToggleDict } from "@/types/i18n";
+
 
 export function ThemeToggle({ dict }: {
-  dict: {
-    theme_toggle_light: string;
-    theme_toggle_dark: string;
-  }
+  dict: ThemeToggleDict
 }) {
   const [mounted, setMounted] = useState(false);
   const { resolvedTheme, setTheme } = useTheme();

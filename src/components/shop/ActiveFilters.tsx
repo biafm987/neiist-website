@@ -3,6 +3,8 @@
 import styles from "@/styles/components/shop/ActiveFilters.module.css";
 import { FiX } from "react-icons/fi";
 import { OrderStatus } from "@/types/shop/orderStatus";
+import type { ActiveFiltersDict } from "@/types/i18n";
+
 
 interface ActiveFiltersProps {
   dateRange: { start: Date | null; end: Date | null };
@@ -15,14 +17,7 @@ interface ActiveFiltersProps {
   onRemoveStatus: (_status: string) => void;
   onClearAll: () => void;
   getStatusLabel: (_status: OrderStatus) => string;
-  dict: {
-    label: string;
-    clear_all: string;
-    from: string;
-    until: string;
-    remove_date_range: string;
-    remove_filter: string;
-  };
+  dict: ActiveFiltersDict;
   locale: string;
 }
 

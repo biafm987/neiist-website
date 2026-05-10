@@ -1,16 +1,14 @@
 import Link from "next/link";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import styles from "@/styles/components/about-us/YearSelector.module.css";
+import type { YearSelectorDict } from "@/types/i18n";
+
 
 interface YearSelectorProps {
   years: string[];
   selectedYear: string;
   visible?: number;
-  dict:{
-    nav_label: string;
-    prev_label: string;
-    next_label: string;
-  }
+  dict: YearSelectorDict
 }
 
 function formatYearDisplay(year: string) {

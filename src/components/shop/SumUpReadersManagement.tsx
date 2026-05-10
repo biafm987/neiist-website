@@ -4,37 +4,11 @@ import { FiTrash2 } from "react-icons/fi";
 import styles from "@/styles/components/shop/SumUpReadersManagement.module.css";
 import { SumUpReader } from "@/types/sumup";
 import ConfirmDialog from "@/components/layout/ConfirmDialog";
+import type { SumUpReadersManagementDict } from "@/types/i18n";
+
 
 interface SumUpReadersManagementProps {
-  dict: {
-    sumup_readers: {
-      pairing_code_label: string;
-      pairing_code_placeholder: string;
-      reader_name_label: string;
-      reader_name_placeholder: string;
-      add_button: string;
-      loading: string;
-      no_readers: string;
-      remove_button: string;
-      added_success1: string;
-      added_success2: string;
-      removed_success: string;
-      pairing_code_required: string;
-      table_id: string;
-      table_name: string;
-      table_status: string;
-      table_model: string;
-      table_actions: string;
-      fetch_error: string;
-      create_error: string;
-      delete_error: string;
-    };
-    confirm_dialog: {
-      title: string;
-      confirm: string;
-      cancel: string;
-    };
-  };
+  dict: SumUpReadersManagementDict;
 }
 export default function SumUpReadersManagement( {dict}: SumUpReadersManagementProps) {
   const [readers, setReaders] = useState<SumUpReader[]>([]);

@@ -10,22 +10,7 @@ interface CreateNewUserModalProps {
   onClose: () => void;
   onSubmit?: (_user: User) => void;
   initialIstId?: string;
-  dict: {
-    title: string;
-    ist_id_label: string;
-    ist_id_placeholder: string;
-    name_label: string;
-    name_placeholder: string;
-    email_label: string;
-    email_placeholder: string;
-    cancel: string;
-    submitting: string;
-    submit: string;
-    confirm_message_1: string;
-    confirm_message_2: string;
-    error_required: string;
-    error_create: string;
-  };
+  dict: CreateNewUserModalDict;
   confirm_dialog: {
     title: string;
     confirm: string;

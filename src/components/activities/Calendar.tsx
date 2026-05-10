@@ -29,14 +29,7 @@ const localizer = dateFnsLocalizer({
 interface CalendarProps {
   events: CalendarEvent[];
   signedUpEventIds: string[];
-  dict: {
-    toolbar:{
-    today: string;
-    previous_month: string;
-    next_month: string;
-    };
-    details: any;
-  }
+  dict: CalendarDict
   locale: string;
 }
 

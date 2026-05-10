@@ -17,48 +17,7 @@ import type { ApplePayPaymentRequest, ApplePayPaymentToken } from "@/types/sumup
 
 interface CheckoutFormProps {
   user: User;
-  dict: {
-    empty_cart: string;
-    section_personal: string;
-    phone_label: string;
-    phone_placeholder: string;
-    nif_label: string;
-    nif_placeholder: string;
-    section_delivery: string;
-    section_campus: string;
-    section_payment: string;
-    section_notes: string;
-    notes_placeholder: string;
-    processing: string;
-    submit: string;
-    apple_pay_label: string;
-    summary_title: string;
-    subtotal: string;
-    iva: string;
-    total: string;
-    tax_info: string;
-    tax_info_detail: string;
-    delivery_estimate: string;
-    delivery_detail: string;
-    campus_alameda: string;
-    campus_taguspark: string;
-    payment_card: string;
-    payment_in_person: string;
-    error_no_campus: string;
-    error_no_payment: string;
-    error_mixed_invalid: string;
-    error_submit: string;
-    error_apple_pay_context: string;
-    error_apple_pay_unavailable: string;
-    error_apple_pay_device: string;
-    error_apple_pay_failed: string;
-    error_apple_pay_processing: string;
-    error_checkout_create: string;
-    error_checkout_unexpected: string;
-    error_applepay_validation: string;
-    error_payment_incomplete: string;
-
-  };
+  dict: CheckoutFormDict;
 }
 
 export default function CheckoutForm({ user, dict }: CheckoutFormProps) {

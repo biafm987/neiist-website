@@ -24,18 +24,7 @@ import hashcode from "@/assets/events/hashcode.jpg";
 import lip from "@/assets/events/lip.jpg";
 
 interface ActivitiesProps {
-  dict: {
-    title: string;
-    no_events: string;
-    prev_label: string;
-    next_label: string;
-    events: {
-      [key : string]: {
-        title: string;
-        description: string;
-      };
-    };
-  };
+  dict: ActivitiesDict;
 }
 
 function Activities({ dict }: ActivitiesProps) {

@@ -66,52 +66,7 @@ interface OrderDetailOverlayProps {
   canEditNotes?: boolean;
   canEditItems?: boolean;
   products?: Product[];
-  dict: {
-    order_details: {
-      close_label: string;
-      order_title: string;
-      not_found: string;
-      col_name: string;
-      col_ist_id: string;
-      col_campus: string;
-      col_email: string;
-      col_phone: string;
-      items_title: string;
-      edit_items_label: string;
-      col_product: string;
-      col_variant: string;
-      col_qty: string;
-      col_price: string;
-      col_total: string;
-      add_notes: string;
-      total_label: string;
-      notes_title: string;
-      status_title: string;
-      pay_btn: string;
-      mark_ready: string;
-      mark_delivered: string;
-      cancel_order: string;
-      created_by: string;
-      payment_verified_by: string;
-      pickup_deadline: string;
-      delivered_by: string;
-      step_pending: string;
-      step_paid: string;
-      step_ready: string;
-      step_delivered: string;
-      confirm_cancel: string;
-      confirm_status: string;
-      confirm_save_notes: string;
-      error_update_status: string;
-      error_cancel: string;
-      error_save_notes: string;
-      pickup_toast: string;
-    };
-    confirm_dialog: { confirm: string; cancel: string };
-    new_order_modal: Record<string, unknown>;
-    create_user_modal: Record<string, unknown>;
-    pos_payment: PosPaymentDict;
-  };
+  dict: OrderDetailsOverlayDict;
 }
 
 export default function OrderDetailOverlay({

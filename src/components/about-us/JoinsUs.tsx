@@ -1,11 +1,9 @@
 import styles from "@/styles/components/about-us/JoinUs.module.css";
+import type { JoinsUsDict } from "@/types/i18n";
+
 
 interface JoinUsProps {
-  dict: {
-    title: string; 
-    description: string;
-    apply: string;
-  };
+  dict: JoinsUsDict;
 }
 export default function JoinUs(
   { dict }: JoinUsProps) {
