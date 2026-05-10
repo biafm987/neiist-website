@@ -1,12 +1,14 @@
 "use client";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Image from "next/image";
+import { FiChevronDown, FiImage } from "react-icons/fi";
 import { useRouter } from "next/navigation";
-import { Product, CartItem } from "@/types/shop";
+import { Product, CartItem } from "@/types/shop/product";
+import { isJantarDeCursoCategory } from "@/utils/shop/orderKindUtils";
 import styles from "@/styles/components/shop/ProductDetail.module.css";
-import { FiChevronDown } from "react-icons/fi";
-import { getColorFromOptions, isColorKey } from "@/utils/shopUtils";
+import { getColorFromOptions, isColorKey } from "@/utils/shop/shopUtils";
 import SizeGuideOverlay from "@/components/shop/SizeGuideOverlay";
+import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 
 interface ProductDetailProps {
@@ -16,6 +18,7 @@ interface ProductDetailProps {
 
 export default function ProductDetail({ product, dict }: ProductDetailProps) {
   const router = useRouter();
+  const isJantarDeCurso = isJantarDeCursoCategory(product.category);
   const unavailableToastId = `product-detail-unavailable-${product.id}`;
 
   useEffect(() => {
@@ -24,137 +27,167 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
     };
   }, [unavailableToastId]);
 
-  const optionNames = useMemo(() => {
-    const all = new Set<string>();
-    product.variants.forEach((v) => Object.keys(v.options || {}).forEach((k) => all.add(k)));
-    return Array.from(all);
-  }, [product.variants]);
-
-  const mainOption = optionNames[0] || "";
-  const subOption = optionNames[1] || "";
   const normalize = (val?: string) => (val ? val.replace(/['"\\]/g, "").trim() : "");
 
-  const mainValues = useMemo(() => {
-    const set = new Set<string>();
+  const optionNames = useMemo(() => {
+    const seen = new Set<string>();
+    const result: string[] = [];
     product.variants.forEach((v) => {
-      const raw = v.options?.[mainOption];
-      if (!raw) return;
-      const cleanValue = normalize(raw);
-      set.add(cleanValue);
+      Object.keys(v.options || {}).forEach((k) => {
+        if (!seen.has(k)) {
+          seen.add(k);
+          result.push(k);
+        }
+      });
     });
-    return Array.from(set);
-  }, [product.variants, mainOption]);
+    return result;
+  }, [product.variants]);
 
-  const [selectedMain, setSelectedMain] = useState(mainValues[0] || "");
-  const subValues = useMemo(() => {
-    const set = new Set<string>();
-    product.variants.forEach((v) => {
-      if (
-        normalize(v.options?.[mainOption]) === normalize(selectedMain) &&
-        v.options?.[subOption]
-      ) {
-        set.add(normalize(v.options[subOption]));
-      }
+  const [selected, setSelected] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    optionNames.forEach((name) => {
+      init[name] = normalize(product.variants[0]?.options?.[name]);
     });
-    return Array.from(set);
-  }, [product.variants, mainOption, subOption, selectedMain]);
+    return init;
+  });
 
-  const [selectedSub, setSelectedSub] = useState(subValues[0] || "");
-  const [qty, setQty] = useState(1);
+  const availableValues = useMemo(() => {
+    const result: Record<string, string[]> = {};
+    optionNames.forEach((name, idx) => {
+      const priorOptions = optionNames.slice(0, idx);
+      const matching = product.variants.filter((v) =>
+        priorOptions.every((prior) => normalize(v.options?.[prior]) === normalize(selected[prior]))
+      );
+      const seen = new Set<string>();
+      const values: string[] = [];
+      matching.forEach((v) => {
+        const val = normalize(v.options?.[name]);
+        if (val && !seen.has(val)) {
+          seen.add(val);
+          values.push(val);
+        }
+      });
+      result[name] = values;
+    });
+    return result;
+  }, [product.variants, optionNames, selected]);
 
-  const allImages = useMemo(() => {
-    const imgSet = new Set<string>();
-    product.images.forEach((img) => imgSet.add(img));
-    product.variants.forEach((v) => (v.images ?? []).forEach((img) => imgSet.add(img)));
-    return Array.from(imgSet);
-  }, [product]);
+  useEffect(() => {
+    setSelected((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      optionNames.forEach((name) => {
+        const vals = availableValues[name] ?? [];
+        if (vals.length > 0 && !vals.includes(prev[name])) {
+          next[name] = vals[0];
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [availableValues, optionNames]);
 
-  const getVariantImageIndex = (variant?: (typeof product.variants)[0]) => {
-    if (!variant?.images?.length) return 0;
-    const firstImg = variant.images[0];
-    const idx = allImages.indexOf(firstImg);
-    return idx >= 0 ? idx : 0;
-  };
-
-  const [imgIndex, setImgIndex] = useState(0);
+  const handleSelect = useCallback((optionName: string, value: string) => {
+    setSelected((prev) => ({ ...prev, [optionName]: value }));
+  }, []);
 
   const selectedVariant = useMemo(() => {
-    return product.variants.find((v) => {
-      const mainValue = normalize(v.options?.[mainOption]);
-      const subValue = normalize(v.options?.[subOption]);
-      return mainValue === normalize(selectedMain) && subValue === normalize(selectedSub);
+    if (optionNames.length === 0) return undefined;
+    return product.variants.find((v) =>
+      optionNames.every((name) => normalize(v.options?.[name]) === normalize(selected[name]))
+    );
+  }, [product.variants, optionNames, selected]);
+
+  const allImages = useMemo(() => {
+    const result: string[] = [...product.images];
+    const inResult = new Set(result);
+    product.variants.forEach((v) => {
+      (v.images ?? []).forEach((img) => {
+        if (!inResult.has(img)) {
+          result.push(img);
+          inResult.add(img);
+        }
+      });
     });
-  }, [product.variants, mainOption, subOption, selectedMain, selectedSub]);
+    return result;
+  }, [product]);
+
+  const getVariantImageIndex = useCallback(
+    (variant?: (typeof product.variants)[0]): number => {
+      if (!variant?.images?.length) return 0;
+      const idx = allImages.indexOf(variant.images[0]);
+      return idx >= 0 ? idx : 0;
+    },
+    [allImages, product]
+  );
+
+  const [imgIndex, setImgIndex] = useState(() => getVariantImageIndex(product.variants[0]));
+
+  useEffect(() => {
+    setImgIndex(getVariantImageIndex(selectedVariant));
+  }, [selectedVariant, getVariantImageIndex]);
 
   const price = useMemo(() => {
     return (product.price || 0) + (selectedVariant?.price_modifier || 0);
   }, [product.price, selectedVariant]);
-
-  const [showSizeGuide, setShowSizeGuide] = useState(false);
-
-  const addToCart = () => {
-    if (!canBuy) {
-      if (isDeadlineExpired) {
-        toast.error("O prazo de encomenda deste produto já terminou.", {
-          id: unavailableToastId,
-          duration: Infinity,
-        });
-      } else {
-        toast.error("Este produto já não está disponível para compra.", {
-          id: unavailableToastId,
-          duration: Infinity,
-        });
-      }
-      return;
-    }
-
-    const cart: CartItem[] = JSON.parse(localStorage.getItem("cart") || "[]");
-    cart.push({
-      product,
-      variantId: selectedVariant?.id,
-      quantity: qty,
-    });
-    localStorage.setItem("cart", JSON.stringify(cart));
-    window.dispatchEvent(new Event("cartUpdated"));
-    router.push("/shop");
-  };
-
-  const handleMainChange = (val: string) => {
-    setSelectedMain(val);
-    const newSub = product.variants.find(
-      (v) => normalize(v.options?.[mainOption]) === normalize(val)
-    )?.options?.[subOption];
-    setSelectedSub(normalize(newSub) || "");
-    const newVariant = product.variants.find((v) => {
-      const mainValue = normalize(v.options?.[mainOption]);
-      const subValue = normalize(v.options?.[subOption]);
-      return mainValue === normalize(val) && subValue === normalize(newSub || "");
-    });
-    setImgIndex(getVariantImageIndex(newVariant));
-  };
-
-  const handleSubChange = (val: string) => {
-    setSelectedSub(val);
-    const newVariant = product.variants.find((v) => {
-      const mainValue = normalize(v.options?.[mainOption]);
-      const subValue = normalize(v.options?.[subOption]);
-      return mainValue === normalize(selectedMain) && subValue === normalize(val);
-    });
-    setImgIndex(getVariantImageIndex(newVariant));
-  };
 
   const isDeadlineExpired =
     product.stock_type === "on_demand" &&
     !!product.order_deadline &&
     new Date(product.order_deadline) < new Date();
 
-  const canBuy =
-    !isDeadlineExpired &&
-    (product.variants.length === 0 ||
-      (selectedVariant &&
-        selectedVariant.active &&
-        (product.stock_type !== "limited" || (selectedVariant.stock_quantity ?? 0) > 0)));
-  const isColorOption = isColorKey(mainOption);
+  const isVariantAvailable = useCallback(
+    (v: (typeof product.variants)[0]) =>
+      v.active && (product.stock_type !== "limited" || (v.stock_quantity ?? 0) > 0),
+    [product]
+  );
+
+  const canBuy = useMemo(() => {
+    if (isDeadlineExpired) return false;
+    if (product.variants.length === 0)
+      return product.stock_type !== "limited" || (product.stock_quantity ?? 0) > 0;
+    return !!selectedVariant && isVariantAvailable(selectedVariant);
+  }, [isDeadlineExpired, product, selectedVariant, isVariantAvailable]);
+
+  const maxQty = useMemo(() => {
+    if (product.stock_type !== "limited") return 99;
+    if (product.variants.length === 0) return product.stock_quantity ?? 0;
+    return selectedVariant?.stock_quantity ?? 0;
+  }, [product, selectedVariant]);
+
+  const [qty, setQty] = useState(1);
+  useEffect(() => {
+    setQty(1);
+  }, [selectedVariant]);
+
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
+
+  const addToCart = () => {
+    if (!canBuy) {
+      toast.error(
+        isDeadlineExpired
+          ? "O prazo de encomenda deste produto já terminou."
+          : "Este produto já não está disponível para compra.",
+        { id: unavailableToastId, duration: Infinity }
+      );
+      return;
+    }
+    const cart: CartItem[] = JSON.parse(localStorage.getItem("cart") || "[]");
+    if (isJantarDeCurso) {
+      localStorage.setItem(
+        "cart",
+        JSON.stringify([{ product, variantId: selectedVariant?.id, quantity: 1 }])
+      );
+      window.dispatchEvent(new Event("cartUpdated"));
+      router.push("/shop/checkout");
+      return;
+    }
+
+    cart.push({ product, variantId: selectedVariant?.id, quantity: qty });
+    localStorage.setItem("cart", JSON.stringify(cart));
+    window.dispatchEvent(new Event("cartUpdated"));
+    router.push("/shop");
+  };
 
   return (
     <div className={styles.container}>
@@ -165,16 +198,24 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
         <span className={styles.breadcrumbSeparator}>››</span>
         <span className={styles.breadcrumbCurrent}>{dict?.products?.[product.name]?.title ?? product.name}</span>
       </div>
+
       <div className={styles.grid}>
         <div className={styles.imageSection}>
-          <Image
-            src={allImages[imgIndex]}
-            alt={product.name}
-            width={600}
-            height={800}
-            className={styles.mainImage}
-            priority
-          />
+          {allImages.length > 0 ? (
+            <Image
+              src={allImages[imgIndex] ?? allImages[0]}
+              alt={product.name}
+              width={600}
+              height={800}
+              className={styles.mainImage}
+              priority
+            />
+          ) : (
+            <div className={`${styles.mainImage} ${styles.noImage}`}>
+              <FiImage size={64} />
+              <span>Sem Imagem</span>
+            </div>
+          )}
           {allImages.length > 1 && (
             <div className={styles.thumbnails}>
               {allImages.map((src, i) => (
@@ -189,86 +230,89 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
             </div>
           )}
         </div>
+
         <div className={styles.infoSection}>
           <h1 className={styles.title}>{dict?.products?.[product.name]?.title ?? product.name}</h1>
           <div className={styles.price}>{price.toFixed(2)}€</div>
-          <p className={styles.description}>{dict?.products?.[product.name]?.description ?? product.description}</p>
-          {mainOption && (
-            <div>
-              <span className={styles.label}>{mainOption}</span>
-              <div className={isColorOption ? styles.colorOptions : styles.options}>
-                {mainValues.map((val) => {
-                  const color = getColorFromOptions({ [mainOption]: val }, undefined);
-                  const colorHex = color.hex;
-                  const colorName = color.name ?? val;
-                  const isSelected = normalize(selectedMain) === normalize(val);
+          <div className={styles.description}>
+            <ReactMarkdown
+              components={{
+                a: ({ ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />,
+              }}>
+              {dict?.products?.[product.name]?.description ?? product.description}
+            </ReactMarkdown>
+          </div>
 
-                  if (isColorOption) {
+          {optionNames.map((optionName, idx) => {
+            const isColor = isColorKey(optionName);
+            const values = availableValues[optionName] ?? [];
+            const priorOptions = optionNames.slice(0, idx);
+            return (
+              <div key={optionName}>
+                <span className={styles.label}>{optionName}</span>
+                <div className={isColor ? styles.colorOptions : styles.options}>
+                  {values.map((val) => {
+                    const isSelected = normalize(selected[optionName]) === normalize(val);
+                    const hasAvailable = product.variants.some((v) => {
+                      const priorMatch = priorOptions.every(
+                        (prior) => normalize(v.options?.[prior]) === normalize(selected[prior])
+                      );
+                      return (
+                        priorMatch &&
+                        normalize(v.options?.[optionName]) === normalize(val) &&
+                        isVariantAvailable(v)
+                      );
+                    });
+
+                    if (isColor) {
+                      const color = getColorFromOptions({ [optionName]: val }, undefined);
+                      return (
+                        <button
+                          key={val}
+                          className={[
+                            styles.option,
+                            isSelected ? styles.selected : "",
+                            !hasAvailable ? styles.unavailable : "",
+                          ].join(" ")}
+                          style={{ backgroundColor: color.hex || undefined }}
+                          onClick={() => handleSelect(optionName, val)}
+                          title={color.name ?? val}
+                          aria-label={color.name ?? val}
+                          aria-pressed={isSelected}
+                        />
+                      );
+                    }
+
                     return (
                       <button
                         key={val}
-                        className={`${styles.option} ${isSelected ? styles.selected : ""}`}
-                        style={{
-                          backgroundColor: colorHex || undefined,
-                        }}
-                        onClick={() => handleMainChange(val)}
-                        title={colorName}
-                        aria-label={colorName}
-                        aria-pressed={isSelected}></button>
+                        className={[
+                          styles.option,
+                          isSelected ? styles.selected : "",
+                          !hasAvailable ? styles.unavailable : "",
+                        ].join(" ")}
+                        onClick={() => handleSelect(optionName, val)}
+                        disabled={!hasAvailable}
+                        aria-label={`Select ${optionName} ${val}`}>
+                        {val}
+                      </button>
                     );
-                  }
+                  })}
+                </div>
+              </div>
+            );
+          })}
 
-                  return (
-                    <button
-                      key={val}
-                      className={`${styles.option} ${isSelected ? styles.selected : ""}`}
-                      onClick={() => handleMainChange(val)}
-                      aria-label={`Select ${val}`}>
-                      {val}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-          {subOption && (
-            <div>
-              <span className={styles.label}>{subOption}</span>
-              <div className={styles.options}>
-                {subValues.map((val) => (
-                  <button
-                    key={val}
-                    className={`${styles.option} ${selectedSub === val ? styles.selected : ""}`}
-                    onClick={() => handleSubChange(val)}
-                    disabled={
-                      !product.variants.some((v) => {
-                        const mainValue = normalize(v.options?.[mainOption]);
-                        const subValue = normalize(v.options?.[subOption]);
-                        return (
-                          mainValue === normalize(selectedMain) &&
-                          subValue === val &&
-                          v.active &&
-                          (product.stock_type === "on_demand" || (v.stock_quantity ?? 0) > 0)
-                        );
-                      })
-                    }
-                    aria-label={`Select size ${val}`}>
-                    {val}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-            <span className={styles.label}>{dict?.labels?.quantity}</span>
+          <span className={styles.label}>{dict?.labels?.quantity ?? "Quantidade"}</span>
           <div className={styles.qtyAndButton}>
-            <div className={styles.quantity}>
-              <button
-                onClick={() => setQty((q) => Math.max(1, q - 1))}
-                aria-label="Decrease quantity">
+            <div className={`${styles.quantity} ${isJantarDeCurso ? styles.quantityDisabled : ""}`}>
+              <button onClick={() => setQty((q) => Math.max(1, q - 1))} disabled={isJantarDeCurso}>
                 -
               </button>
               <span>{qty}</span>
-              <button onClick={() => setQty((q) => q + 1)} aria-label="Increase quantity">
+              <button
+                onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
+                disabled={isJantarDeCurso || (product.stock_type === "limited" && qty >= maxQty)}>
                 +
               </button>
             </div>
@@ -277,43 +321,48 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
               onClick={() => {
                 if (!canBuy) addToCart();
               }}>
-                <button className={styles.addButton} onClick={addToCart} disabled={!canBuy}>
-                {dict?.buttons?.add_to_cart}
-                </button>
+              <button className={styles.addButton} onClick={addToCart} disabled={!canBuy}>
+                {isJantarDeCurso 
+                  ? (dict?.buttons?.buy_now ?? "Comprar já") 
+                  : (dict?.buttons?.add_to_cart ?? "Adicionar ao Carrinho")}
+              </button>
             </div>
           </div>
-          <div className={styles.asideDetails}>
-            <details className={styles.detailsBlock}>
-              <summary>
-                <span>Guia de Tamanhos</span>
-                <FiChevronDown className={styles.detailIcon} aria-hidden />
-              </summary>
-              <p>
-                Vê o nosso{" "}
-                <a
-                  href="#"
-                  className={styles.sizeGuideLink}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setShowSizeGuide(true);
-                  }}>
-                  Guia de Tamanhos
-                </a>{" "}
-                para mais detalhes.
-              </p>
-            </details>
-            <SizeGuideOverlay open={showSizeGuide} onClose={() => setShowSizeGuide(false)} />
-            <details className={styles.detailsBlock}>
-              <summary>
-                <span>Prazos de Entrega</span>
-                <FiChevronDown className={styles.detailIcon} aria-hidden />
-              </summary>
-              <p>
-                Encomenda até 25 de Dezembro para receberes entre 20 e 25 de Janeiro. Pedidos após
-                esta data terão um tempo de espera superior.
-              </p>
-            </details>
-          </div>
+
+          {!isJantarDeCurso && (
+            <div className={styles.asideDetails}>
+              <details className={styles.detailsBlock}>
+                <summary>
+                  <span>Guia de Tamanhos</span>
+                  <FiChevronDown className={styles.detailIcon} aria-hidden />
+                </summary>
+                <p>
+                  Vê o nosso{" "}
+                  <a
+                    href="#"
+                    className={styles.sizeGuideLink}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowSizeGuide(true);
+                    }}>
+                    Guia de Tamanhos
+                  </a>{" "}
+                  para mais detalhes.
+                </p>
+              </details>
+              <SizeGuideOverlay open={showSizeGuide} onClose={() => setShowSizeGuide(false)} />
+              <details className={styles.detailsBlock}>
+                <summary>
+                  <span>Prazos de Entrega</span>
+                  <FiChevronDown className={styles.detailIcon} aria-hidden />
+                </summary>
+                <p>
+                  Encomenda até 25 de Dezembro para receberes entre 20 e 25 de Janeiro. Pedidos após
+                  esta data terão um tempo de espera superior.
+                </p>
+              </details>
+            </div>
+          )}
         </div>
       </div>
     </div>

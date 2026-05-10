@@ -6,9 +6,16 @@ import Fuse from "fuse.js";
 import CreateNewUserModal from "@/components/shop/CreateNewUserModal";
 import styles from "@/styles/components/shop/NewOrderModal.module.css";
 import { checkRoles, UserRole, type User } from "@/types/user";
-import { Campus, type Product, type ProductVariant, type Order } from "@/types/shop";
-import { isColorKey, splitNameHex } from "@/utils/shopUtils";
+import { Order, Campus } from "@/types/shop/order";
+import { Product, ProductVariant } from "@/types/shop/product";
+import {
+  getOrderKindFromItems,
+  getOrderKindFromCategory,
+  getOrderKindRules,
+} from "@/utils/shop/orderKindUtils";
+import { isColorKey, splitNameHex } from "@/utils/shop/shopUtils";
 import ConfirmDialog from "@/components/layout/ConfirmDialog";
+import InputTextDialog from "@/components/layout/InputTextDialog";
 import { useUser } from "@/context/UserContext";
 
 interface Props {
@@ -98,13 +105,32 @@ const displayValue = (key: string, val: string) => {
   return name || hex || val;
 };
 
+const normalizeOptionValue = (value?: string) => (value ? value.replace(/["'\\]/g, "").trim() : "");
+
 const variantLabel = (name: string, options: Record<string, string>) => {
   const values = Object.entries(options).map(([k, v]) => displayValue(k, v));
   return values.length ? `${name} - ${values.join(" | ")}` : name;
 };
 
-const getOptionKeys = (product: Product) =>
-  product.variants?.length ? Object.keys(product.variants[0].options) : [];
+const getOptionKeys = (product: Product) => {
+  const keys: string[] = [];
+  const seen = new Set<string>();
+
+  product.variants.forEach((variant) => {
+    Object.keys(variant.options ?? {}).forEach((key) => {
+      if (seen.has(key)) return;
+      seen.add(key);
+      keys.push(key);
+    });
+  });
+
+  return keys;
+};
+
+const matchesSelections = (variant: ProductVariant, selections: Record<string, string>) =>
+  Object.entries(selections).every(
+    ([key, value]) => normalizeOptionValue(variant.options?.[key]) === normalizeOptionValue(value)
+  );
 
 const getValuesForKey = (product: Product, selections: Record<string, string>): string[] => {
   const keys = getOptionKeys(product);
@@ -113,7 +139,7 @@ const getValuesForKey = (product: Product, selections: Record<string, string>): 
   return Array.from(
     new Set(
       product.variants
-        .filter((v) => Object.entries(selections).every(([k, val]) => v.options[k] === val))
+        .filter((variant) => matchesSelections(variant, selections))
         .map((v) => v.options[nextKey])
     )
   );
@@ -126,11 +152,7 @@ const resolveVariant = (
   const keys = getOptionKeys(product);
   if (Object.keys(selections).length < keys.length) return null;
 
-  return (
-    product.variants.find((v) =>
-      Object.entries(selections).every(([k, val]) => v.options[k] === val)
-    ) ?? null
-  );
+  return product.variants.find((variant) => matchesSelections(variant, selections)) ?? null;
 };
 
 const buildFallbackUser = (order: Order): User => ({
@@ -179,6 +201,12 @@ export default function NewOrderModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showGuestConfirm, setShowGuestConfirm] = useState(false);
+  const [showGuestNameInput, setShowGuestNameInput] = useState(false);
+  const [showGuestEmailInput, setShowGuestEmailInput] = useState(false);
+  const [showGuestPhoneInput, setShowGuestPhoneInput] = useState(false);
+  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
 
   const { user } = useUser();
   const isAdmin = checkRoles(user, [UserRole._ADMIN]);
@@ -196,9 +224,31 @@ export default function NewOrderModal({
   const productDropdownRef = useRef<HTMLDivElement>(null);
 
   const uniqueProducts = useMemo(
-    () => Array.from(new Map(products.map((p) => [p.id, p])).values()),
+    () =>
+      Array.from(
+        new Map(
+          products
+            .filter((product) =>
+              getOrderKindRules(
+                getOrderKindFromCategory(product.category),
+                "pos"
+              ).allowedSources.includes("pos")
+            )
+            .map((p) => [p.id, p])
+        ).values()
+      ),
     [products]
   );
+
+  const selectedOrderClassification = useMemo(
+    () => getOrderKindFromItems(selectedProducts.map((item) => item.product)),
+    [selectedProducts]
+  );
+
+  const isUserRequiredForSelectedOrder = getOrderKindRules(
+    selectedOrderClassification.orderKind,
+    "pos"
+  ).requiresUserAssignment;
 
   const productFuse = useMemo(
     () =>
@@ -375,6 +425,13 @@ export default function NewOrderModal({
     setShowUserDropdown(false);
   };
 
+  const closeProductPicker = () => {
+    setProductSearch("");
+    setShowProductDropdown(false);
+    setCascade(null);
+    setProductHighlight(0);
+  };
+
   const addProduct = (product: Product, variant: ProductVariant) => {
     const label = variantLabel(product.name, variant.options);
     setSelectedProducts((prev) => {
@@ -386,9 +443,7 @@ export default function NewOrderModal({
       }
       return [...prev, { product, variant: { id: variant.id, label }, quantity: 1 }];
     });
-    setProductSearch("");
-    setShowProductDropdown(false);
-    productInputRef.current?.focus();
+    closeProductPicker();
   };
 
   const openCascade = (product: Product) => {
@@ -409,7 +464,6 @@ export default function NewOrderModal({
     const variant = resolveVariant(product, newSelections);
     if (variant) {
       addProduct(product, variant);
-      setCascade(null);
     } else {
       setCascade({ product, optionKeys, selections: newSelections });
       setProductHighlight(0);
@@ -438,20 +492,27 @@ export default function NewOrderModal({
     | { status: "error"; message: string };
 
   const submitOrder = async (stockOverride = false): Promise<SubmitResult> => {
+    const guestCheckout = !selectedUser;
+    const customerName = selectedUser?.name ?? guestName.trim();
+    const customerEmail = selectedUser?.email ?? guestEmail.trim();
+
     const payload = {
-      user_istid: selectedUser?.istid,
-      customer_name: selectedUser?.name,
-      customer_email: selectedUser?.email,
-      customer_phone: phone || undefined,
+      user_istid: !isEditMode ? selectedUser?.istid : undefined,
+      customer_name: !isEditMode ? customerName || undefined : undefined,
+      customer_email: !isEditMode ? customerEmail || undefined : undefined,
+      customer_phone: !isEditMode ? phone || undefined : undefined,
       customer_nif: nif || undefined,
       campus: campus || undefined,
       notes: notes || undefined,
       stock_override: stockOverride,
+      payment_method: !isEditMode ? "cash" : undefined,
+      guest_checkout: !isEditMode ? guestCheckout : undefined,
       items: selectedProducts.map(({ product, variant, quantity }) => ({
         product_id: product.id,
         variant_id: variant.id || undefined,
         quantity,
       })),
+      order_source: "pos",
     };
 
     const endpoint =
@@ -491,16 +552,31 @@ export default function NewOrderModal({
       setError("Por favor, selecione o campus.");
       return;
     }
-    if (!isEditMode && !selectedUser) {
-      // TODO: (ERROR)
-      setError("Por favor, selecione um utilizador.");
+    if (selectedOrderClassification.isMixedInvalid) {
+      setError("Este pedido nao pode misturar categorias especiais com outras categorias.");
       return;
     }
+
+    const guestCheckout = !selectedUser;
+    if (guestCheckout) {
+      if (isUserRequiredForSelectedOrder && !guestName.trim()) {
+        setError("Por favor, indique o nome do cliente.");
+        return;
+      }
+      if (isUserRequiredForSelectedOrder && !guestEmail.trim()) {
+        setError("Por favor, indique o email do cliente.");
+        return;
+      }
+      if (isUserRequiredForSelectedOrder && !phone.trim()) {
+        setError("Por favor, indique o telemóvel do cliente.");
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     setError(null);
 
     try {
-      //TODO: (LOADING)
       const orderResponse = await submitOrder(stockOverride);
 
       if (orderResponse.status === "stock_override") {
@@ -530,6 +606,17 @@ export default function NewOrderModal({
     setShowCreateUser(false);
   };
 
+  const startGuestFlow = () => {
+    setError(null);
+    setShowGuestConfirm(false);
+    if (!isUserRequiredForSelectedOrder) {
+      setShowConfirm(true);
+      return;
+    }
+
+    setShowGuestNameInput(true);
+  };
+
   if (showCreateUser) {
     return (
       <CreateNewUserModal
@@ -557,7 +644,11 @@ export default function NewOrderModal({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            setShowConfirm(true);
+            if (selectedUser) {
+              setShowConfirm(true);
+            } else {
+              setShowGuestConfirm(true);
+            }
           }}>
           {!isEditMode && (
             <div className={styles.formGroup}>
@@ -721,7 +812,7 @@ export default function NewOrderModal({
                           : { name: val, hex: "" };
                         return (
                           <div
-                            key={val}
+                            key={`${currentKeyIdx}-${idx}-${val}`}
                             className={`${styles.dropdownItem} ${idx === productHighlight ? styles.highlighted : ""}`}
                             onClick={() => selectCascadeValue(val)}
                             onMouseEnter={() => setProductHighlight(idx)}>
@@ -798,17 +889,19 @@ export default function NewOrderModal({
             </div>
           </div>
 
-          <div className={styles.formGroup}>
-            <label>{dict.new_order_modal.phone_label}</label>
-            <input
-              type="text"
-              placeholder={dict.new_order_modal.phone_placeholder}
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className={styles.input}
-              disabled={isSubmitting}
-            />
-          </div>
+          {!isEditMode && (
+            <div className={styles.formGroup}>
+              <label>{dict.new_order_modal.phone_label}</label>
+              <input
+                type="text"
+                placeholder={dict.new_order_modal.phone_placeholder}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className={styles.input}
+                disabled={isSubmitting}
+              />
+            </div>
+          )}
 
           <div className={styles.formGroup}>
             <label>{dict.new_order_modal.notes_label}</label>
@@ -855,6 +948,73 @@ export default function NewOrderModal({
             }}
             onCancel={() => setShowConfirm(false)}
             dict={dict.confirm_dialog}
+          />
+        )}
+        {showGuestConfirm && (
+          <ConfirmDialog
+            open={showGuestConfirm}
+            message="Tem a certeza que deseja vender esta encomenda como Guest?"
+            onConfirm={startGuestFlow}
+            onCancel={() => setShowGuestConfirm(false)}
+          />
+        )}
+        {showGuestNameInput && (
+          <InputTextDialog
+            open={showGuestNameInput}
+            title="Guest"
+            label="Nome do cliente"
+            initialValue={guestName}
+            placeholder="Nome do cliente"
+            onConfirm={(value) => {
+              if (!value) {
+                setError("Por favor, indique o nome do cliente.");
+                return;
+              }
+              setGuestName(value);
+              setShowGuestNameInput(false);
+              setShowGuestEmailInput(true);
+            }}
+            onCancel={() => setShowGuestNameInput(false)}
+          />
+        )}
+        {showGuestEmailInput && (
+          <InputTextDialog
+            open={showGuestEmailInput}
+            title="Guest"
+            label="Email do cliente"
+            initialValue={guestEmail}
+            placeholder="mail@example.com"
+            type="email"
+            onConfirm={(value) => {
+              if (!value) {
+                setError("Por favor, indique o email do cliente.");
+                return;
+              }
+              setGuestEmail(value);
+              setShowGuestEmailInput(false);
+              setShowGuestPhoneInput(true);
+            }}
+            onCancel={() => setShowGuestEmailInput(false)}
+          />
+        )}
+        {showGuestPhoneInput && (
+          <InputTextDialog
+            open={showGuestPhoneInput}
+            title="Guest"
+            label="Telemóvel do cliente"
+            initialValue={phone}
+            placeholder="+351 000 000 000"
+            type="tel"
+            onConfirm={(value) => {
+              if (!value) {
+                setError("Por favor, indique o telemóvel do cliente.");
+                return;
+              }
+              setPhone(value);
+              setShowGuestPhoneInput(false);
+              setShowConfirm(true);
+            }}
+            onCancel={() => setShowGuestPhoneInput(false)}
           />
         )}
         {showStockOverrideConfirm && (

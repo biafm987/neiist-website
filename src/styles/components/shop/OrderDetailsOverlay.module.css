@@ -120,7 +120,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
   gap: 1.5rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
 }
 
 .infoColumnWide {
@@ -133,8 +133,23 @@
   gap: 0.25rem;
 }
 
+.infoItemInline {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .infoItem label {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
+  color: var(--foreground-colour);
+  margin: 0;
+}
+
+.infoItemInline label {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.95rem;
   color: var(--foreground-colour);
   margin: 0;
 }
@@ -143,6 +158,12 @@
   font-size: 0.95rem;
   margin: 0;
   word-break: break-word;
+}
+
+.infoItemInline p {
+  font-size: 0.95rem;
+  margin: 0;
+  word-break: keep-all;
 }
 
 .table {
@@ -317,24 +338,8 @@
   background: var(--primary-colour);
   border-radius: 2px;
   z-index: 1;
-  width: 0;
+  width: var(--progress-width, 0%);
   transition: width 0.35s ease;
-}
-
-.progressbar:has(.step0:nth-child(1).active)::after {
-  width: calc(25% - 8px);
-}
-
-.progressbar:has(.step0:nth-child(2).active)::after {
-  width: calc(50% - 8px);
-}
-
-.progressbar:has(.step0:nth-child(3).active)::after {
-  width: calc(75% - 8px);
-}
-
-.progressbar:has(.step0:nth-child(4).active)::after {
-  width: 100%;
 }
 
 .step0 {

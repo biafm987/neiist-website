@@ -13,7 +13,7 @@ export default async function OrdersManagementPage({ searchParams }: PageProps) 
   const { orderId } = await searchParams;
   const locale = await getLocale();
   const dict = await getDictionary(locale);
-  const [orders, products] = await Promise.all([getAllOrders(), getAllProducts()]);
+  const [orders, products] = await Promise.all([getAllOrders(), getAllProducts(true)]);
   const roles = (await serverCheckRoles([]))?.roles ?? [UserRole._GUEST];
 
   const canManage =

@@ -5,8 +5,10 @@ import Link from "next/link";
 import Image from "next/image";
 import Fuse from "fuse.js";
 import styles from "@/styles/components/shop/MyOrdersList.module.css";
-import { Order, Product } from "@/types/shop";
-import { getCompactProductsSummary } from "@/utils/shopUtils";
+import { Order } from "@/types/shop/order";
+import { Product } from "@/types/shop/product";
+import { getCompactProductsSummary } from "@/utils/shop/shopUtils";
+import { getOrderKindFromItems, getOrderStatusLabelForKind } from "@/utils/shop/orderKindUtils";
 
 type Dict = {
   title_letters: string[];
@@ -139,9 +141,10 @@ export default function MyOrdersList({ orders, products, dict }: Props) {
           filtered.map((order) => {
             const img = selectImage(order);
             const productSummary = getCompactProductsSummary(order.items).join(" · ");
+            const orderKind = getOrderKindFromItems(order.items).orderKind;
             const statusLabel = order.delivered_at
               ? dict.delivered_on.replace("{date}", new Date(order.delivered_at).toLocaleDateString("pt-PT"))
-              : getStatusLabel(order.status);
+              : getOrderStatusLabelForKind(orderKind, order.status, order);
 
             return (
               <Link

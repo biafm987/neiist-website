@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { MdClose } from "react-icons/md";
 import { toast } from "sonner";
 import ConfirmDialog from "@/components/layout/ConfirmDialog";
-import type { Order, PaymentMethod } from "@/types/shop";
+import { Order } from "@/types/shop/order";
+import { PENDING_PAYMENT_METHODS, PaymentMethod } from "@/types/shop/payment";
+import { getOrderKindRules, getOrderKindFromItems } from "@/utils/shop/orderKindUtils";
 import type { SumUpReader } from "@/types/sumup";
 import PaymentProcessingSpinner from "@/components/shop/PaymentProcessingSpinner";
 import styles from "@/styles/components/shop/PosPaymentOverlay.module.css";
@@ -13,6 +15,7 @@ import styles from "@/styles/components/shop/PosPaymentOverlay.module.css";
 export interface PosPaymentDict {
   close_label: string;
   title: string;
+  title_register_payment: string;
   method_label: string;
   method_cash: string;
   method_other: string;
@@ -20,6 +23,7 @@ export interface PosPaymentDict {
   method_sumup: string;
   method_apple_pay: string;
   method_in_person: string;
+  method_mbway: string;
   reference_label: string;
   reference_placeholder: string;
   reader_label: string;
@@ -48,6 +52,7 @@ export interface PosPaymentDict {
   payment_confirmed: string;
   error_payment: string;
   confirm_cash: string;
+  confirm_mbway: string;
   confirm_reference: string;
 }
 
@@ -109,6 +114,7 @@ export default function PosPaymentOverlay({
       sumup: d.method_sumup,
       "apple-pay": d.method_apple_pay,
       "in-person": d.method_in_person,
+      mbway: d.method_mbway,
     };
     return labels[method];
   };
@@ -120,6 +126,21 @@ export default function PosPaymentOverlay({
       selectedReaderId,
     [readers, selectedReaderId, initialReaderName]
   );
+
+  const { orderKind } = useMemo(() => getOrderKindFromItems(order.items), [order.items]);
+
+  const availablePaymentMethods = useMemo(
+    () =>
+      getOrderKindRules(orderKind, "pos").paymentMethods.filter(
+        (method): method is Exclude<PaymentMethod, "in-person"> => method !== "in-person"
+      ),
+    [orderKind]
+  );
+
+  const isExistingOrderPaymentFlow = initialPaymentMethod
+    ? PENDING_PAYMENT_METHODS.has(initialPaymentMethod)
+    : false;
+  const title = isExistingOrderPaymentFlow ? "Registar Pagamento" : "Finalizar Encomenda";
 
   useEffect(() => {
     if (!open || paymentMethod !== "sumup-tpa") return;
@@ -155,16 +176,22 @@ export default function PosPaymentOverlay({
     if (!open) return;
 
     autoStartedRef.current = false;
-    setPaymentMethod(initialPaymentMethod ?? "cash");
+    const defaultMethod = availablePaymentMethods[0] ?? "cash";
+    const canUseInitialMethod =
+      initialPaymentMethod &&
+      initialPaymentMethod !== "in-person" &&
+      availablePaymentMethods.includes(initialPaymentMethod);
+    const preferredMethod = canUseInitialMethod ? initialPaymentMethod : defaultMethod;
+
+    setPaymentMethod(preferredMethod);
     setSelectedReaderId(initialReaderId ?? "");
     setError(null);
     setStatusMessage("");
     setFlowState("form");
     setCompletedOrder(null);
     setShowConfirmDialog(false);
-  }, [open, initialPaymentMethod, initialReaderId]);
+  }, [open, initialPaymentMethod, initialReaderId, availablePaymentMethods]);
 
-  // Reset selectedReaderId when payment method changes to sumup-tpa
   useEffect(() => {
     if (!open) return;
 
@@ -200,21 +227,26 @@ export default function PosPaymentOverlay({
     [order.id, d.error_update_order]
   );
 
-  const markOrderAsPaid = useCallback(async (): Promise<Order> => {
-    const res = await fetch(`/api/shop/orders/${order.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "paid" }),
-    });
+  const finalizePaidOrder = useCallback(
+    async (paymentReference: string): Promise<Order> => {
+      const res = await fetch(`/api/shop/orders/${order.id}/pay`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentReference }),
+      });
 
-    const data = (await res.json().catch(() => null)) as { error?: string } | Order | null;
-    if (!res.ok || !data || !("id" in data))
-      throw new Error(
-        (data as { error?: string } | null)?.error || d.error_mark_paid
-      );
+      if (!res.ok) {
+        const errorData = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(errorData?.error || d.error_mark_paid);
+      }
 
-    return data;
-  }, [order.id, d.error_mark_paid]);
+      const data = (await res.json().catch(() => null)) as Order | null;
+      if (!data || !("id" in data)) throw new Error(d.error_mark_paid);
+
+      return data;
+    },
+    [order.id, d.error_mark_paid]
+  );
 
   const pollReaderTransactionPaid = useCallback(
     async (
@@ -293,7 +325,7 @@ export default function PosPaymentOverlay({
               payment_method: "sumup-tpa",
               payment_reference: paymentReference,
             });
-            const updated = await markOrderAsPaid();
+            const updated = await finalizePaidOrder(paymentReference);
             return updated;
           }
 
@@ -319,7 +351,7 @@ export default function PosPaymentOverlay({
         payment_method: "sumup-tpa",
         payment_reference: paymentReference,
       });
-      const updated = await markOrderAsPaid();
+      const updated = await finalizePaidOrder(paymentReference);
       return updated;
     }
 
@@ -335,7 +367,7 @@ export default function PosPaymentOverlay({
     refreshOrder,
     pollReaderTransactionPaid,
     updateOrderFields,
-    markOrderAsPaid,
+    finalizePaidOrder,
     d,
   ]);
 
@@ -353,17 +385,23 @@ export default function PosPaymentOverlay({
       let updated: Order | null = null;
 
       if (paymentMethod === "cash") {
-        await updateOrderFields({ payment_method: "cash", payment_reference: "" });
-        updated = await markOrderAsPaid();
+        await updateOrderFields({ payment_method: "cash" });
+        updated = await finalizePaidOrder("cash");
+      } else if (paymentMethod === "mbway") {
+        const mbwayRef = order.mbway_number?.trim() ?? "";
+        if (!mbwayRef) throw new Error("MBWay number missing for this order");
+        await updateOrderFields({ payment_method: "mbway", payment_reference: mbwayRef });
+        updated = await finalizePaidOrder(mbwayRef);
       } else if (paymentMethod === "other") {
         if (!paymentReference.trim())
           throw new Error(d.fill_reference);
 
+        const ref = paymentReference.trim();
         await updateOrderFields({
-          payment_method: "other",
-          payment_reference: paymentReference.trim(),
+          payment_method: paymentMethod,
+          payment_reference: ref,
         });
-        updated = await markOrderAsPaid();
+        updated = await finalizePaidOrder(ref);
       } else if (paymentMethod === "sumup-tpa") {
         updated = await runTpaFlow();
       }
@@ -392,8 +430,9 @@ export default function PosPaymentOverlay({
   }, [
     paymentMethod,
     paymentReference,
+    order.mbway_number,
     updateOrderFields,
-    markOrderAsPaid,
+    finalizePaidOrder,
     runTpaFlow,
     onOrderUpdatedAction,
     onCloseAction,
@@ -428,13 +467,27 @@ export default function PosPaymentOverlay({
     onCloseAction();
   };
 
+  const handleClose = useCallback(async () => {
+    if (!completedOrder) {
+      try {
+        await updateOrderFields({ payment_method: "in-person" });
+      } catch (err) {
+        console.warn("Failed to set payment method to in-person on close", err);
+      }
+    }
+    onCloseAction();
+  }, [completedOrder, updateOrderFields, onCloseAction]);
+
   if (!open) return null;
 
-  const paymentNeedsConfirmation = paymentMethod === "cash" || paymentMethod === "other";
+  const paymentNeedsConfirmation =
+    paymentMethod === "cash" || paymentMethod === "other" || paymentMethod === "mbway";
   const confirmationMessage =
     paymentMethod === "cash"
       ? d.confirm_cash
-      : d.confirm_reference.replace("{reference}", paymentReference.trim() || "-");
+      : paymentMethod === "mbway"
+        ? (d.confirm_mbway || "Confirmas que recebeste o pagamento por MBWay e está correto?")
+        : d.confirm_reference.replace("{reference}", paymentReference.trim() || "-");
 
   if (flowState === "processing" || flowState === "success") {
     return (
@@ -462,19 +515,21 @@ export default function PosPaymentOverlay({
   }
 
   return (
-    <div
-      className={styles.backdrop}
-      onClick={(e) => e.target === e.currentTarget && onCloseAction()}>
+    <div className={styles.backdrop} onClick={(e) => e.target === e.currentTarget && handleClose()}>
       <div className={styles.modal}>
         <button
           className={styles.closeButton}
           type="button"
-          onClick={onCloseAction}
+          onClick={handleClose}
           aria-label={d.close_label}>
           <MdClose size={20} />
         </button>
 
-        <h3 className={styles.title}>{d.title.replace("{number}", order.order_number)}</h3>
+        <h3 className={styles.title}>
+          {isExistingOrderPaymentFlow 
+            ? (d.title_register_payment || "Registar Pagamento")
+            : d.title.replace("{number}", order.order_number)}
+        </h3>
 
         {error ? <div className={styles.error}>{error}</div> : null}
 
@@ -485,13 +540,15 @@ export default function PosPaymentOverlay({
             value={paymentMethod}
             onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
             disabled={isSubmitting || lockPaymentMethod}>
-            <option value="cash">{methodLabel("cash")}</option>
-            <option value="other">{methodLabel("other")}</option>
-            <option value="sumup-tpa">{methodLabel("sumup-tpa")}</option>
+            {availablePaymentMethods.map((method) => (
+              <option key={method} value={method}>
+                {methodLabel(method)}
+              </option>
+            ))}
           </select>
         </label>
 
-        {paymentMethod === "other" ? (
+        {paymentMethod === "other" && (
           <label className={styles.label}>
             {d.reference_label}
             <input
@@ -503,7 +560,12 @@ export default function PosPaymentOverlay({
               disabled={isSubmitting}
             />
           </label>
-        ) : null}
+        )}
+        {paymentMethod === "mbway" && order.payment_method !== "mbway" && (
+          <div className={styles.label}>
+            Enviar MBWay para: <strong>{order.mbway_number || "Número não disponível"}</strong>
+          </div>
+        )}
 
         {paymentMethod === "sumup-tpa" ? (
           <>
@@ -535,7 +597,7 @@ export default function PosPaymentOverlay({
           <button
             type="button"
             className={styles.cancelButton}
-            onClick={onCloseAction}
+            onClick={handleClose}
             disabled={isSubmitting}>
             {d.cancel}
           </button>

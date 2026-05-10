@@ -1,32 +1,61 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, type CSSProperties } from "react";
 import styles from "@/styles/components/shop/OrderDetailsOverlay.module.css";
+import { Order } from "@/types/shop/order";
+import { OrderStatus } from "@/types/shop/orderStatus";
+import type { OrderProgressStep } from "@/types/shop/orderKind";
 import {
-  Order,
-  OrderStatus,
-  getPaymentLabel,
-  getStatusLabel,
-  getStatusCssClass,
-  canTransitionTo,
-} from "@/types/shop";
+  getAllowedOrderStatusTransitions,
+  getOrderProgressSteps,
+  getOrderKindFromItems,
+  getOrderStatusLabelForKind,
+  canTransitionOrderStatus,
+  getOrderStatusLabelValue,
+} from "@/utils/shop/orderKindUtils";
+import { getPaymentLabel } from "@/types/shop/payment";
+import { getStatusLabel, getStatusCssClass } from "@/utils/shop/orderStatusUtils";
+import { Product } from "@/types/shop/product";
 import { MdClose } from "react-icons/md";
 import { FaCheck, FaExclamationTriangle } from "react-icons/fa";
 import { toast } from "sonner";
 import { FiChevronDown, FiChevronUp, FiEdit2 } from "react-icons/fi";
 import ConfirmDialog from "@/components/layout/ConfirmDialog";
-import { getColorFromOptions, isColorKey } from "@/utils/shopUtils";
+import { getColorFromOptions, isColorKey, formatVariantSimple } from "@/utils/shop/shopUtils";
 import { FaArrowRightLong } from "react-icons/fa6";
 import NewOrderModal from "./NewOrderModal";
 import PosPaymentOverlay, { type PosPaymentDict } from "@/components/shop/PosPaymentOverlay";
-import type { Product } from "@/types/shop";
+import { PENDING_PAYMENT_METHODS } from "@/types/shop/payment";
 
 function formatVariant(options?: Record<string, string>, label?: string) {
-  if (label) return label;
-  if (!options) return "-";
-  return Object.entries(options)
-    .map(([k, v]) => `${k}: ${v}`)
-    .join(", ");
+  const { text } = formatVariantSimple(options ?? undefined, label ?? undefined);
+  return text || "-";
+}
+
+function getPaymentDisplay(order: Order) {
+  if (!order.payment_method) return "";
+
+  if (order.payment_method === "mbway")
+    return `${getPaymentLabel(order.payment_method)} - ${order.mbway_number}`;
+
+  return getPaymentLabel(order.payment_method);
+}
+
+function hasPaymentReference(order: Order): boolean {
+  const paymentReference = order.payment_reference?.trim();
+  return (
+    (order.payment_method === "sumup" ||
+      order.payment_method === "sumup-tpa" ||
+      order.payment_method === "other" ||
+      order.payment_method === "apple-pay") &&
+    Boolean(paymentReference)
+  );
+}
+
+function getPaymentButtonLabel(paymentMethod?: Order["payment_method"]): string {
+  return paymentMethod && PENDING_PAYMENT_METHODS.has(paymentMethod)
+    ? "Registar Pagamento"
+    : "Finalizar Encomenda";
 }
 
 interface OrderDetailOverlayProps {
@@ -108,6 +137,8 @@ export default function OrderDetailOverlay({
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showEditOrderModal, setShowEditOrderModal] = useState(false);
   const [showPaymentOverlay, setShowPaymentOverlay] = useState(false);
+
+  const paymentButtonLabel = getPaymentButtonLabel(order?.payment_method);
 
   useEffect(() => {
     setOrder(orders.find((o) => o.id === orderId) || null);
@@ -241,13 +272,29 @@ export default function OrderDetailOverlay({
     );
   }
 
-  const steps = ["pending", "paid", "ready", "delivered"];
-  const currentStepIndex = Math.max(0, steps.indexOf(order.status));
+  const { orderKind } = getOrderKindFromItems(order.items);
+  const progressSteps = getOrderProgressSteps(orderKind);
+  const getStepLabel = (step: OrderProgressStep) => getOrderStatusLabelValue(step.label, order);
+  const activeStepIndex = progressSteps.findLastIndex((step) =>
+    step.activeStatuses.includes(order.status)
+  );
+  const progressWidth =
+    progressSteps.length > 0 && activeStepIndex >= 0
+      ? `${((activeStepIndex + 1) / progressSteps.length) * 100}%`
+      : "0%";
+  const progressBarStyle: CSSProperties = {
+    "--progress-width": progressWidth,
+  } as CSSProperties;
 
-  const canSetPaid = canManage && canTransitionTo(order.status, "paid");
-  const canSetReady = canManage && canTransitionTo(order.status, "ready");
-  const canSetDelivered = canManage && canTransitionTo(order.status, "delivered");
-  const canCancel = canManage && canTransitionTo(order.status, "cancelled");
+  const allowedStatusTransitions = canManage
+    ? getAllowedOrderStatusTransitions(orderKind, order.status)
+    : [];
+  const canSetPaid = canManage && canTransitionOrderStatus(orderKind, order.status, "paid");
+  const canSetReady = canManage && canTransitionOrderStatus(orderKind, order.status, "ready");
+  const canSetDelivered =
+    canManage && canTransitionOrderStatus(orderKind, order.status, "delivered");
+  const canCancel = canManage && canTransitionOrderStatus(orderKind, order.status, "cancelled");
+  const canShowManageStatusActions = allowedStatusTransitions.length > 0;
   const userCanCancel = !canManage && order.status === "pending";
 
   const saveNotes = async (): Promise<boolean> => {
@@ -301,14 +348,14 @@ export default function OrderDetailOverlay({
             <div className={styles.header}>
               <h2>{d.order_title}</h2>
               <span className={`${styles.statusBadge} ${styles[getStatusCssClass(order.status)]}`}>
-                {getStatusLabel(order.status)}
+                {getOrderStatusLabelForKind(orderKind, order.status, order)}
               </span>
             </div>
 
             <div className={styles.orderNumber}>
               {order.order_number}
               <FaArrowRightLong />
-              {order.payment_method ? getPaymentLabel(order.payment_method) : ""}
+              {getPaymentDisplay(order)}
             </div>
 
             <div className={styles.infoGrid}>
@@ -347,6 +394,14 @@ export default function OrderDetailOverlay({
                   <p>{order.customer_phone || "-"}</p>
                 </div>
               </div>
+              {hasPaymentReference(order) && (
+                <div className={styles.infoColumn}>
+                  <div className={styles.infoItemInline}>
+                    <label>Referência de Pagamento:</label>
+                    <p>{order.payment_reference?.trim()}</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className={styles.section}>
@@ -494,33 +549,44 @@ export default function OrderDetailOverlay({
 
             {canManage ? (
               <div className={styles.section}>
-                <h3>{d.status_title}</h3>
-                <div className={styles.actionButtons}>
-                  <button
-                    className={styles.buttonOutline}
-                    onClick={() => setShowPaymentOverlay(true)}
-                    disabled={!canSetPaid}>
-                    {d.pay_btn}
-                  </button>
-                  <button
-                    className={styles.buttonPrimary}
-                    onClick={() => setPendingStatus("ready")}
-                    disabled={!canSetReady}>
-                    {d.mark_ready}
-                  </button>
-                  <button
-                    className={styles.buttonPrimary}
-                    onClick={() => setPendingStatus("delivered")}
-                    disabled={!canSetDelivered}>
-                    {d.mark_delivered}
-                  </button>
-                  <button
-                    className={styles.buttonOutline}
-                    onClick={() => setPendingStatus("cancelled")}
-                    disabled={!canCancel}>
-                    {d.cancel_order}
-                  </button>
-                </div>
+                {canShowManageStatusActions && (
+                  <>
+                    <h3>{d.status_title}</h3>
+                    <div className={styles.actionButtons}>
+                      {canSetPaid && (
+                        <button
+                          className={styles.buttonOutline}
+                          onClick={() => setShowPaymentOverlay(true)}>
+                          {paymentButtonLabel}
+                        </button>
+                      )}
+
+                      {canSetReady && (
+                        <button
+                          className={styles.buttonPrimary}
+                          onClick={() => setPendingStatus("ready")}>
+                          {d.mark_ready}
+                        </button>
+                      )}
+
+                      {canSetDelivered && (
+                        <button
+                          className={styles.buttonPrimary}
+                          onClick={() => setPendingStatus("delivered")}>
+                          {d.mark_delivered}
+                        </button>
+                      )}
+
+                      {canCancel && (
+                        <button
+                          className={styles.buttonOutline}
+                          onClick={() => setPendingStatus("cancelled")}>
+                          {d.cancel_order}
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
                 <p className={styles.timestamp}>
                   {d.created_by
                     .replace("{by}", order.created_by || "-")
@@ -549,47 +615,34 @@ export default function OrderDetailOverlay({
             ) : (
               <>
                 {order.status !== "cancelled" && (
-                  <div className={styles.progressContainer}>
-                    <ul className={styles.progressbar}>
-                      <li
-                        className={`${styles.step0} ${currentStepIndex >= 0 ? styles.active : ""}`}
-                        id="step1">
-                        <span className={styles.stepIcon}>
-                          {currentStepIndex >= 0 && <FaCheck size={14} />}
-                        </span>
-                        {d.step_pending}
-                      </li>
-                      <li
-                        className={`${styles.step0} ${currentStepIndex >= 1 ? styles.active : ""}`}
-                        id="step2">
-                        <span className={styles.stepIcon}>
-                          {currentStepIndex >= 1 && <FaCheck size={14} />}
-                        </span>
-                        {d.step_paid}
-                      </li>
-                      <li
-                        className={`${styles.step0} ${currentStepIndex >= 2 ? styles.active : ""} ${
-                          isDeadlineNear && currentStepIndex >= 2 ? styles.stepAlert : ""
-                        }`}
-                        id="step3">
-                        <span className={styles.stepIcon}>
-                          {currentStepIndex >= 2 &&
-                            (isDeadlineNear ? (
-                              <FaExclamationTriangle size={14} />
-                            ) : (
-                              <FaCheck size={14} />
-                            ))}
-                        </span>
-                        {d.step_ready}
-                      </li>
-                      <li
-                        className={`${styles.step0} ${currentStepIndex >= 3 ? styles.active : ""}`}
-                        id="step4">
-                        <span className={styles.stepIcon}>
-                          {currentStepIndex >= 3 && <FaCheck size={14} />}
-                        </span>
-                        {d.step_delivered}
-                      </li>
+                    <ul className={styles.progressbar} style={progressBarStyle}>
+                      {progressSteps.map((step, index) => {
+                        const isStepActive = step.activeStatuses.includes(order.status);
+                        const isStepAlert = step.key === "ready" && isDeadlineNear && isStepActive;
+                        
+                        let translatedLabel = getStepLabel(step);
+                        if (step.key === "pending") translatedLabel = d.step_pending;
+                        if (step.key === "paid") translatedLabel = d.step_paid;
+                        if (step.key === "ready") translatedLabel = d.step_ready;
+                        if (step.key === "delivered") translatedLabel = d.step_delivered;
+
+                        return (
+                          <li
+                            key={step.key}
+                            className={`${styles.step0} ${isStepActive ? styles.active : ""} ${isStepAlert ? styles.stepAlert : ""}`}
+                            id={`step${index + 1}`}>
+                            <span className={styles.stepIcon}>
+                              {isStepActive &&
+                                (isStepAlert ? (
+                                  <FaExclamationTriangle size={14} />
+                                ) : (
+                                  <FaCheck size={14} />
+                                ))}
+                            </span>
+                            {translatedLabel}
+                          </li>
+                        );
+                      })}
                     </ul>
                   </div>
                 )}
@@ -675,6 +728,7 @@ export default function OrderDetailOverlay({
         <PosPaymentOverlay
           open={showPaymentOverlay}
           order={order}
+          initialPaymentMethod={order.payment_method}
           reopenOrderUrl={`${basePath}?orderId=${order.id}`}
           onCloseAction={() => setShowPaymentOverlay(false)}
           onOrderUpdatedAction={(updatedOrder) => {

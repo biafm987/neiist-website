@@ -243,6 +243,9 @@ CREATE TABLE neiist.orders (
   id SERIAL PRIMARY KEY,
   order_number TEXT NOT NULL UNIQUE DEFAULT neiist.generate_order_number(),
   user_istid VARCHAR(10) REFERENCES neiist.users(istid),
+  customer_name TEXT,
+  customer_email TEXT,
+  customer_phone TEXT,
   nif TEXT,
   campus TEXT,
   notes TEXT,
@@ -257,14 +260,19 @@ CREATE TABLE neiist.orders (
   delivered_at TIMESTAMPTZ,
   delivered_by TEXT,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  status neiist.shop_order_status_enum NOT NULL DEFAULT 'pending'
+  updated_by TEXT,
+  status neiist.shop_order_status_enum NOT NULL DEFAULT 'pending',
+  CONSTRAINT orders_identity_mode_chk CHECK (
+    user_istid IS NULL
+    OR (customer_name IS NULL AND customer_email IS NULL AND customer_phone IS NULL)
+  )
 );
 
 CREATE TABLE neiist.order_items (
   id SERIAL PRIMARY KEY,
   order_id INTEGER NOT NULL REFERENCES neiist.orders(id) ON DELETE CASCADE,
-  product_id INTEGER NOT NULL REFERENCES neiist.products(id),
-  variant_id INTEGER REFERENCES neiist.product_variants(id),
+  product_id INTEGER REFERENCES neiist.products(id) ON DELETE SET NULL,
+  variant_id INTEGER REFERENCES neiist.product_variants(id) ON DELETE SET NULL,
   product_name TEXT NOT NULL,
   variant_label TEXT,
   variant_options JSONB,
@@ -272,6 +280,12 @@ CREATE TABLE neiist.order_items (
   unit_price NUMERIC(10,2) NOT NULL,
   total_price NUMERIC(10,2) NOT NULL
 );
+
+-- Index for better search performance of products on orders
+CREATE INDEX IF NOT EXISTS idx_order_items_product_id ON neiist.order_items(product_id);
+
+-- Index to speed up lookups by user on orders
+CREATE INDEX IF NOT EXISTS idx_orders_user_istid ON neiist.orders(user_istid);
 
 --Triggers
 
@@ -333,6 +347,30 @@ AFTER UPDATE OF status ON neiist.orders
 FOR EACH ROW
 WHEN (OLD.status IS DISTINCT FROM NEW.status AND NEW.status = 'cancelled')
 EXECUTE FUNCTION neiist.restock_limited_items_on_order_cancel();
+
+-- Update the name of products on orders
+CREATE OR REPLACE FUNCTION neiist.update_order_item_product_name_on_product_rename()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  IF NEW.name IS DISTINCT FROM OLD.name THEN
+    UPDATE neiist.order_items oi
+    SET product_name = NEW.name
+    WHERE oi.product_id = NEW.id
+      AND oi.product_name = OLD.name;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_update_order_item_product_name_on_product_rename
+AFTER UPDATE OF name ON neiist.products
+FOR EACH ROW
+WHEN (OLD.name IS DISTINCT FROM NEW.name)
+EXECUTE FUNCTION neiist.update_order_item_product_name_on_product_rename();
 
 -- FUNCTIONS
 
@@ -1581,9 +1619,89 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Get all products including archived ones (admin view)
+CREATE OR REPLACE FUNCTION neiist.get_all_products_including_archived()
+RETURNS TABLE (
+  id INTEGER,
+  name TEXT,
+  description TEXT,
+  price NUMERIC(10,2),
+  images TEXT[],
+  category TEXT,
+  stock_type TEXT,
+  stock_quantity INTEGER,
+  order_deadline TIMESTAMPTZ,
+  active BOOLEAN,
+  variants JSONB
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    p.id, p.name, p.description, p.price, p.images,
+    c.name AS category,
+    p.stock_type::TEXT, p.stock_quantity, p.order_deadline,
+    p.active,
+    COALESCE((
+      SELECT jsonb_agg(
+        jsonb_build_object(
+          'id', v.id,
+          'sku', v.sku,
+          'images', v.images,
+          'price_modifier', v.price_modifier,
+          'stock_quantity', v.stock_quantity,
+          'active', v.active,
+          'options', COALESCE((
+              SELECT jsonb_object_agg(vo.option_name, vo.option_value)
+              FROM neiist.product_variant_options vo
+              WHERE vo.variant_id = v.id
+            ), '{}'::jsonb),
+          'label', NULLIF((
+              SELECT string_agg(vo.option_name || ': ' || vo.option_value, ' | ' ORDER BY vo.option_name)
+              FROM neiist.product_variant_options vo
+              WHERE vo.variant_id = v.id
+            ), '')
+        )
+        ORDER BY v.id
+      )
+      FROM neiist.product_variants v
+      WHERE v.product_id = p.id
+    ), '[]'::JSONB) AS variants
+  FROM neiist.products p
+  LEFT JOIN neiist.categories c ON c.id = p.category_id
+  ORDER BY p.active DESC, p.id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Permanently delete a product and all its variants (hard delete)
+CREATE OR REPLACE FUNCTION neiist.delete_product(p_product_id INTEGER)
+RETURNS VOID AS $$
+BEGIN
+  DELETE FROM neiist.products WHERE id = p_product_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Product % not found', p_product_id;
+  END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Permanently delete a single product variant (hard delete)
+CREATE OR REPLACE FUNCTION neiist.delete_product_variant(p_variant_id INTEGER)
+RETURNS VOID AS $$
+BEGIN
+  DELETE FROM neiist.product_variants WHERE id = p_variant_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Variant % not found', p_variant_id;
+  END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- New order created
 CREATE OR REPLACE FUNCTION neiist.new_order(
   p_user_istid VARCHAR(10),
+  p_customer_name TEXT,
+  p_customer_email TEXT,
+  p_customer_phone TEXT,
   p_nif TEXT,
   p_campus TEXT,
   p_notes TEXT,
@@ -1614,10 +1732,14 @@ CREATE OR REPLACE FUNCTION neiist.new_order(
   delivered_at TIMESTAMPTZ,
   delivered_by TEXT,
   updated_at TIMESTAMPTZ,
+  updated_by TEXT,
   status TEXT
 ) AS $$
 DECLARE
   v_order_id INTEGER;
+  v_customer_name TEXT;
+  v_customer_email TEXT;
+  v_customer_phone TEXT;
   it JSONB;
   v_pid INTEGER;
   v_vid INTEGER;
@@ -1633,8 +1755,26 @@ DECLARE
   v_v_label TEXT;
   v_v_opts JSONB;
 BEGIN
+  v_customer_name := CASE
+    WHEN p_user_istid IS NOT NULL THEN NULL
+    ELSE NULLIF(BTRIM(p_customer_name), '')
+  END;
+
+  v_customer_email := CASE
+    WHEN p_user_istid IS NOT NULL THEN NULL
+    ELSE NULLIF(BTRIM(p_customer_email), '')
+  END;
+
+  v_customer_phone := CASE
+    WHEN p_user_istid IS NOT NULL THEN NULL
+    ELSE NULLIF(BTRIM(p_customer_phone), '')
+  END;
+
   INSERT INTO neiist.orders(
     user_istid,
+    customer_name,
+    customer_email,
+    customer_phone,
     nif,
     campus,
     notes,
@@ -1644,6 +1784,9 @@ BEGIN
   )
   VALUES (
     p_user_istid,
+    v_customer_name,
+    v_customer_email,
+    v_customer_phone,
     p_nif,
     p_campus,
     p_notes,
@@ -1751,15 +1894,29 @@ BEGIN
     );
   END LOOP;
 
-  UPDATE neiist.orders SET total_amount = ROUND(v_total, 2), updated_at = NOW() WHERE orders.id = v_order_id;
+  UPDATE neiist.orders SET total_amount = ROUND(v_total, 2), updated_at = NOW(), updated_by = p_created_by WHERE orders.id = v_order_id;
 
   RETURN QUERY
   SELECT
     o.id, o.order_number,
-    COALESCE(u.name, '') AS customer_name,
+    CASE
+      WHEN o.user_istid IS NULL THEN COALESCE(o.customer_name, '')
+      ELSE COALESCE(u.name, '')
+    END AS customer_name,
     o.user_istid,
-    u.email AS customer_email,
-    (SELECT c.contact_value FROM neiist.user_contacts c WHERE c.user_istid = o.user_istid AND c.contact_type = 'phone' LIMIT 1) AS customer_phone,
+    CASE
+      WHEN o.user_istid IS NULL THEN o.customer_email
+      ELSE u.email
+    END AS customer_email,
+    CASE
+      WHEN o.user_istid IS NULL THEN o.customer_phone
+      ELSE (
+        SELECT c.contact_value
+        FROM neiist.user_contacts c
+        WHERE c.user_istid = o.user_istid AND c.contact_type = 'phone'
+        LIMIT 1
+      )
+    END AS customer_phone,
     o.nif AS customer_nif,
      o.campus,
     o.pickup_deadline,
@@ -1779,7 +1936,7 @@ BEGIN
     ), '[]'::JSONB) AS items,
     o.notes, o.total_amount, o.payment_method, o.payment_reference,
     o.created_by,
-    o.created_at, o.paid_at, o.payment_checked_by, o.delivered_at, o.delivered_by, o.updated_at,
+    o.created_at, o.paid_at, o.payment_checked_by, o.delivered_at, o.delivered_by, o.updated_at, o.updated_by,
     o.status::TEXT
   FROM neiist.orders o
   LEFT JOIN neiist.users u ON u.istid = o.user_istid
@@ -1814,6 +1971,7 @@ RETURNS TABLE (
   delivered_at TIMESTAMPTZ,
   delivered_by TEXT,
   updated_at TIMESTAMPTZ,
+  updated_by TEXT,
   status neiist.shop_order_status_enum
 ) AS $$
 BEGIN
@@ -1829,16 +1987,25 @@ BEGIN
   SELECT
     o.id,
     o.order_number,
-    COALESCE(u.name, '') AS customer_name,
+    CASE
+      WHEN o.user_istid IS NULL THEN COALESCE(o.customer_name, '')
+      ELSE COALESCE(u.name, '')
+    END AS customer_name,
     o.user_istid,
-    u.email AS customer_email,
-    (
-      SELECT c.contact_value
-      FROM neiist.user_contacts c
-      WHERE c.user_istid = o.user_istid
-        AND c.contact_type = 'phone'
-      LIMIT 1
-    ) AS customer_phone,
+    CASE
+      WHEN o.user_istid IS NULL THEN o.customer_email
+      ELSE u.email
+    END AS customer_email,
+    CASE
+      WHEN o.user_istid IS NULL THEN o.customer_phone
+      ELSE (
+        SELECT c.contact_value
+        FROM neiist.user_contacts c
+        WHERE c.user_istid = o.user_istid
+          AND c.contact_type = 'phone'
+        LIMIT 1
+      )
+    END AS customer_phone,
     o.nif AS customer_nif,
     o.campus,
     o.pickup_deadline,
@@ -1870,6 +2037,7 @@ BEGIN
     o.delivered_at,
     o.delivered_by,
     o.updated_at,
+    o.updated_by,
     o.status
   FROM neiist.orders o
   LEFT JOIN neiist.users u ON u.istid = o.user_istid
@@ -1905,6 +2073,7 @@ RETURNS TABLE (
   delivered_at TIMESTAMPTZ,
   delivered_by TEXT,
   updated_at TIMESTAMPTZ,
+  updated_by TEXT,
   status neiist.shop_order_status_enum
 ) AS $$
 BEGIN
@@ -1912,15 +2081,24 @@ BEGIN
   SELECT
     o.id,
     o.order_number,
-    COALESCE(u.name, '') AS customer_name,
+    CASE
+      WHEN o.user_istid IS NULL THEN COALESCE(o.customer_name, '')
+      ELSE COALESCE(u.name, '')
+    END AS customer_name,
     o.user_istid,
-    u.email AS customer_email,
-    (
-      SELECT c.contact_value
-      FROM neiist.user_contacts c
-      WHERE c.user_istid = o.user_istid AND c.contact_type = 'phone'
-      LIMIT 1
-    ) AS customer_phone,
+    CASE
+      WHEN o.user_istid IS NULL THEN o.customer_email
+      ELSE u.email
+    END AS customer_email,
+    CASE
+      WHEN o.user_istid IS NULL THEN o.customer_phone
+      ELSE (
+        SELECT c.contact_value
+        FROM neiist.user_contacts c
+        WHERE c.user_istid = o.user_istid AND c.contact_type = 'phone'
+        LIMIT 1
+      )
+    END AS customer_phone,
     o.nif AS customer_nif,
     o.campus,
     o.pickup_deadline,
@@ -1952,6 +2130,7 @@ BEGIN
     o.delivered_at,
     o.delivered_by,
     o.updated_at,
+    o.updated_by,
     o.status
   FROM neiist.orders o
   LEFT JOIN neiist.users u ON u.istid = o.user_istid
@@ -1963,7 +2142,8 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE FUNCTION neiist.update_order(
   p_order_id INTEGER,
   p_updates JSONB,
-  p_stock_override BOOLEAN DEFAULT FALSE
+  p_stock_override BOOLEAN DEFAULT FALSE,
+  p_user_istid TEXT DEFAULT NULL
 ) RETURNS TABLE (
   id INTEGER,
   order_number TEXT,
@@ -1986,6 +2166,7 @@ CREATE OR REPLACE FUNCTION neiist.update_order(
   delivered_at TIMESTAMPTZ,
   delivered_by TEXT,
   updated_at TIMESTAMPTZ,
+  updated_by TEXT,
   status TEXT
 ) AS $$
 DECLARE
@@ -2161,10 +2342,10 @@ BEGIN
       );
     END LOOP;
 
-    UPDATE neiist.orders SET total_amount = ROUND(v_total, 2) WHERE neiist.orders.id = p_order_id;
+    UPDATE neiist.orders SET total_amount = ROUND(v_total, 2), updated_by = p_user_istid WHERE neiist.orders.id = p_order_id;
   END IF;
 
-  UPDATE neiist.orders SET updated_at = NOW() WHERE neiist.orders.id = p_order_id;
+  UPDATE neiist.orders SET updated_at = NOW(), updated_by = p_user_istid WHERE neiist.orders.id = p_order_id;
 
   RETURN QUERY
   SELECT
@@ -2189,6 +2370,7 @@ BEGIN
     g.delivered_at,
     g.delivered_by,
     g.updated_at,
+    g.updated_by,
     g.status::TEXT
   FROM neiist.get_all_orders() g
   WHERE g.id = p_order_id;
@@ -2199,7 +2381,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE FUNCTION neiist.set_order_state(
   p_order_id INTEGER,
   p_status neiist.shop_order_status_enum,
-  p_actor TEXT DEFAULT NULL
+  p_user_istid TEXT DEFAULT NULL
 ) RETURNS TABLE (
   id INTEGER,
   order_number TEXT,
@@ -2222,16 +2404,18 @@ CREATE OR REPLACE FUNCTION neiist.set_order_state(
   delivered_at TIMESTAMPTZ,
   delivered_by TEXT,
   updated_at TIMESTAMPTZ,
+  updated_by TEXT,
   status TEXT
 ) AS $$
 BEGIN
   UPDATE neiist.orders o
   SET status = p_status,
       paid_at = CASE WHEN p_status = 'paid' THEN NOW() ELSE o.paid_at END,
-      payment_checked_by = CASE WHEN p_status = 'paid' THEN COALESCE(p_actor, o.payment_checked_by) ELSE o.payment_checked_by END,
-      delivered_at = CASE WHEN p_status = 'delivered' THEN NOW() ELSE o.delivered_at END,
-      delivered_by = CASE WHEN p_status = 'delivered' THEN COALESCE(p_actor, o.delivered_by) ELSE o.delivered_by END,
-      updated_at = NOW()
+        payment_checked_by = CASE WHEN p_status = 'paid' THEN COALESCE(p_user_istid, o.payment_checked_by) ELSE o.payment_checked_by END,
+        delivered_at = CASE WHEN p_status = 'delivered' THEN NOW() ELSE o.delivered_at END,
+        delivered_by = CASE WHEN p_status = 'delivered' THEN COALESCE(p_user_istid, o.delivered_by) ELSE o.delivered_by END,
+        updated_at = NOW(),
+        updated_by = COALESCE(p_user_istid, o.updated_by)
   WHERE o.id = p_order_id;
 
   RETURN QUERY
@@ -2257,11 +2441,28 @@ BEGIN
     g.delivered_at,
     g.delivered_by,
     g.updated_at,
+    g.updated_by,
     g.status::TEXT
   FROM neiist.get_all_orders() g
   WHERE g.id = p_order_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Get all non-cancelled ordered quantities by product for a user within a category
+CREATE OR REPLACE FUNCTION neiist.get_user_ordered_products_in_category(
+  p_user_istid VARCHAR(10),
+  p_category_name TEXT
+) RETURNS TABLE(product_id INTEGER, total INTEGER) AS $$
+  SELECT oi.product_id, SUM(oi.quantity)::INT AS total
+  FROM neiist.order_items oi
+  JOIN neiist.orders o ON oi.order_id = o.id
+  JOIN neiist.products p ON oi.product_id = p.id
+  JOIN neiist.categories c ON p.category_id = c.id
+  WHERE o.user_istid = p_user_istid
+    AND o.status <> 'cancelled'
+    AND lower(c.name) = lower(p_category_name)
+  GROUP BY oi.product_id;
+$$ LANGUAGE sql SECURITY DEFINER;
 
 -- Get all available product categories
 CREATE OR REPLACE FUNCTION neiist.get_all_categories()
