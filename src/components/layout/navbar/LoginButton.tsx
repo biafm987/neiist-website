@@ -1,12 +1,12 @@
 import React from "react";
 import { LuLogIn } from "react-icons/lu";
 import styles from "@/styles/components/layout/navbar/LoginButton.module.css";
+import type { LoginButtonDict } from "@/types/i18n";
+
 
 interface LoginButtonProps {
   onClick?: () => void;
-  dict: { 
-    button: string;
-  }; 
+  dict: LoginButtonDict; 
 }
 
 const LoginButton: React.FC<LoginButtonProps> = ({ onClick, dict }) => {

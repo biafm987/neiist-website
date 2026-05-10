@@ -9,15 +9,11 @@ import { CartItem } from "@/types/shop/product";
 import styles from "@/styles/components/shop/Cart.module.css";
 import { getColorFromOptions, isColorKey } from "@/utils/shop/shopUtils";
 import { isJantarDeCursoCategory } from "@/utils/shop/orderKindUtils";
+import type { CartDict } from "@/types/i18n";
+
 
 interface CartProps {
-  dict: {
-    close_label: string;
-    title: string;
-    empty: string;
-    total: string;
-    checkout: string;
-  }
+  dict: CartDict
 }
 
 export default function Cart({ dict }: CartProps) {

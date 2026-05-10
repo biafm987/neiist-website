@@ -3,6 +3,8 @@
 import { useState, useMemo } from "react";
 import Fuse from "fuse.js";
 import styles from "@/styles/components/admin/TeamsSearchFilter.module.css";
+import type { TeamsSearchFilterDict } from "@/types/i18n";
+
 
 interface Team {
   name: string;
@@ -12,17 +14,7 @@ interface Team {
 
 export default function TeamsSearchFilter({ initialTeams, dict }: { 
   initialTeams: Team[] 
-  dict: {
-    title: string;
-    section_title: string;
-    search_placeholder: string;
-    active: string;
-    show_inactive: string;
-    empty: string;
-    inactive_badge: string;
-    deactivate_title: string;
-    deactivate: string;
-  };
+  dict: TeamsSearchFilterDict;
 }) {
   const [teams] = useState<Team[]>(initialTeams);
   const [search, setSearch] = useState("");

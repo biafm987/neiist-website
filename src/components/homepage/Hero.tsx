@@ -5,15 +5,11 @@ import hero from "@/assets/homepage/hero.png";
 import student from "@/assets/homepage/student.png";
 import styles from "@/styles/components/homepage/Hero.module.css";
 import { useEffect, useState, useRef } from "react";
+import type { HeroDict } from "@/types/i18n";
+
 
 interface HeroProps {
-  dict: {
-    campus_alt: string;
-    student_alt: string;
-    title_prefix: string;
-    title_letters: string[];
-    title_suffix: string;
-  };
+  dict: HeroDict;
 }
 export default function Hero({ dict }: HeroProps) {
   const [studentMovementPosition, setStudentMovementPosition] = useState(50);

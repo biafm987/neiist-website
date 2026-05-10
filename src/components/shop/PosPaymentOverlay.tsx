@@ -67,10 +67,7 @@ type Props = {
   initialReaderId?: string;
   initialReaderName?: string;
   reopenOrderUrl?: string;
-  dict: {
-    pos_payment: PosPaymentDict;
-    confirm_dialog: { confirm: string; cancel: string };
-  };
+  dict: PosPaymentOverlayDict;
 };
 
 type FlowState = "form" | "processing" | "success";

@@ -10,18 +10,14 @@ import { useMemo, useState } from "react";
 import Fuse from "fuse.js";
 import { IconType } from "react-icons";
 import styles from "@/styles/components/activities/IconPicker.module.css";
+import type { IconPickerDict } from "@/types/i18n";
+
 
 interface IconPickerProps {
   value: string | null;
   onChange: (_iconName: string) => void;
   onClose: () => void;
-  dict: {
-    icon_picker: {
-      title: string;
-      search_placeholder: string;
-      close_label: string;
-    };
-  };
+  dict: IconPickerDict;
 }
 
 const ALL_ICONS = {

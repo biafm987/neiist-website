@@ -1,8 +1,10 @@
 import Image from "next/image";
 import logo from "@/assets/homepage/sinfo.png";
 import styles from "@/styles/components/homepage/Sinfo.module.css";
+import type { SinfoDict } from "@/types/i18n";
 
-const Sinfo = ({ dict }: { dict: { title: string; button: string; description: string; objective: string }}) => {
+
+const Sinfo = ({ dict }: { dict: SinfoDict}) => {
 
   return (
     <div className={styles.sinfo}>

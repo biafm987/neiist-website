@@ -1,6 +1,8 @@
 import Image from "next/image";
 import styles from "@/styles/components/about-us/MemberCard.module.css";
 import { FiGithub, FiLinkedin } from "react-icons/fi";
+import type { MemberCardDict } from "@/types/i18n";
+
 
 type MemberCardProps = {
   name: string;
@@ -10,11 +12,7 @@ type MemberCardProps = {
   githuburl?: string;
   linkdinurl?: string;
   username?: string;
-  dict: {
-    github_label: string;
-    linkedin_label: string;
-    photo_alt: string;
-  };
+  dict: MemberCardDict;
 };
 
 const toGithubUrl = (v?: string) =>

@@ -1,4 +1,6 @@
 import styles from "@/styles/components/layout/ConfirmDialog.module.css";
+import type { ConfirmDialogDict } from "@/types/i18n";
+
 
 export default function ConfirmDialog({
   open,
@@ -11,10 +13,7 @@ export default function ConfirmDialog({
   message: string;
   onConfirm: () => void;
   onCancel: () => void;
-  dict: {
-    confirm: string;
-    cancel: string;
-  }
+  dict: ConfirmDialogDict
 
 }) {
   if (!open) return null;

@@ -3,6 +3,8 @@
 import { useState, useMemo } from "react";
 import Fuse from "fuse.js";
 import styles from "@/styles/components/admin/AdminBodiesSearchFilter.module.css";
+import type { AdminBodiesSearchFilterDict } from "@/types/i18n";
+
 
 interface AdminBody {
   name: string;
@@ -14,16 +16,7 @@ export default function AdminBodiesSearchFilter({
   dict,
 }: {
   initialAdminBodies: AdminBody[];
-  dict: {
-    section_title: string;
-    search_placeholder: string;
-    active: string;
-    show_inactive: string;
-    empty: string;
-    inactive_badge: string;
-    deactivate_title: string;
-    deactivate: string;
-  };
+  dict: AdminBodiesSearchFilterDict;
 }) {
   const [adminBodies] = useState<AdminBody[]>(initialAdminBodies);
   const [search, setSearch] = useState("");

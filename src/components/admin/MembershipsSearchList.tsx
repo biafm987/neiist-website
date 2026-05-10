@@ -7,6 +7,8 @@ import { Membership } from "@/types/memberships";
 import { useUser } from "@/context/UserContext";
 import ConfirmDialog from "@/components/layout/ConfirmDialog";
 import styles from "@/styles/components/admin/MembershipsSearchList.module.css";
+import type { MembershipsSearchListDict } from "@/types/i18n";
+
 
 interface Department {
   name: string;
@@ -29,38 +31,7 @@ export default function MembershipsSearchList({
   memberships: Membership[];
   users: Partial<User>[];
   departments: Department[];
-  dict:{
-    add_member_title: string;
-    select_user: string;
-    select_department: string;
-    select_role: string;
-    adding: string;
-    add_member: string;
-    existing_members_title: string;
-    search_placeholder: string;
-    active: string;
-    show_inactive: string;
-    empty: string;
-    change_photo: string;
-    change_photo_inactive: string;
-    department_label: string;
-    role_label: string;
-    email_label: string;
-    since_label: string;
-    until_label: string;
-    active_badge: string;
-    inactive_badge: string;
-    remove: string;
-    confirm_remove: string;
-    errors: {
-      add_member: string;
-      remove_member: string;
-    };
-    confirm_dialog: {
-      confirm: string;
-      cancel: string;
-    };
-  };
+  dict: MembershipsSearchListDict;
 }) {
   const [memberships, setMemberships] = useState(initialMemberships);
   const [search, setSearch] = useState("");

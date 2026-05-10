@@ -13,30 +13,11 @@ import UserMenu from "@/components/layout/navbar/UserMenu";
 import LanguageSwitcher from "@/components/layout/navbar/LanguageSwitcher";
 import { Locale } from "@/lib/i18n-config";
 import styles from "@/styles/components/layout/navbar/NavBar.module.css";
+import type { NavBarDict } from "@/types/i18n";
+
 
 interface NavBarProps {
-  dict: {
-    about_us: string;
-    activities: string;
-    shop: string;
-    layout_navbar: {
-      button: string;
-      theme_toggle_light: string;
-      theme_toggle_dark: string;
-    };
-    menu: {
-      profile: string;
-      my_orders: string;
-      manage_orders: string;
-      manage_team: string;
-      manage_photos: string;
-      manage_shop: string;
-      manage_users: string;
-      manage_departments: string;
-      logout: string;
-      user_photo_alt: string;
-    };
-  };
+  dict: NavBarDict;
   currentLocale: Locale;
 }
 const navLinks = [

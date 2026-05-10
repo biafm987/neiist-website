@@ -29,6 +29,8 @@ import VariantOptionsEditor, { variantValue } from "@/components/shop/VariantOpt
 import MultiSelectDropdown from "@/components/MultiSelectDropdown";
 import ColorfulText from "@/components/ColorfulText";
 import ToggleSwitch from "@/components/ToggleSwitch";
+import type { ProductFormDict } from "@/types/i18n";
+
 
 export interface ProductFormProps {
   product?: Product | null;
@@ -37,47 +39,7 @@ export interface ProductFormProps {
   backHref?: string;
   categories: Category[];
   locale: string;
-  dict: {
-    unknown_error: string;
-    edit: string;
-    add_product: string;
-    back_button: string;
-    images_label: string;
-    no_image: string;
-    upload_image_label: string;
-    product_name_placeholder: string;
-    product_price_placeholder: string;
-    product_description_placeholder: string;
-    choose_categories: string;
-    new_category_placeholder: string;
-    add_category_button: string;
-    limited_stock: string;
-    on_demand_stock: string;
-    product_quantity_placeholder: string;
-    limit_date_placeholder: string;
-    option_types: string;
-    option_placeholder: string;
-    variants_label: string;
-    no_variants: string;
-    extra_price: string;
-    stock_placeholder: string;
-    upload: string;
-    saving: string;
-    save_changes: string;
-    create_product: string;
-    error_create_category: string;
-    error_create_category2: string;
-    error_name_missing: string;
-    error_category_missing: string;
-    error_variant1: string;
-    error_variant2: string;
-    error_color1: string;
-    error_color2: string;
-    error_saving_product: string;
-    error: string;
-    default_option_color: string;
-    default_option_size: string;
-  };
+  dict: ProductFormDict;
 }
 
 type ImageFile = { file: File; preview: string };

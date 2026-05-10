@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import styles from "@/styles/components/layout/InputDateDialog.module.css";
+import type { InputDateDialogDict } from "@/types/i18n";
+
 
 export default function InputDateDialog({
   open,
@@ -18,11 +20,7 @@ export default function InputDateDialog({
   placeholder?: string;
   onConfirm: (_value: string | null) => void;
   onCancel: () => void;
-  dict: {
-    hint: string;
-    confirm: string;
-    cancel: string;
-  }
+  dict: InputDateDialogDict
 }) {
   const [value, setValue] = useState<string>(initialValue ?? "");
 
