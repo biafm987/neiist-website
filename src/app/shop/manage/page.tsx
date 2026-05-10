@@ -3,7 +3,7 @@ import { getAllProducts, getAllCategories } from "@/utils/dbUtils";
 import { getLocale, getDictionary } from "@/lib/i18n";
 
 export default async function ShopManagePage() {
-  const [products, categories] = await Promise.all([getAllProducts(), getAllCategories()]);
+  const [products, categories] = await Promise.all([getAllProducts(), getAllCategories(true)]);
   const locale = await getLocale();
   const dict = await getDictionary(locale);
 

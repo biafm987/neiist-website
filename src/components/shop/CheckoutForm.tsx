@@ -3,9 +3,14 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ShopCheckoutOverlay from "@/components/shop/ShopCheckoutOverlay";
 import styles from "@/styles/components/shop/CheckoutForm.module.css";
-import { Campus, type CartItem, type PaymentMethod } from "@/types/shop";
+
+import { Campus } from "@/types/shop/order";
+import { OrderSource } from "@/types/shop/orderKind";
+import { getPaymentLabel, PaymentMethod } from "@/types/shop/payment";
+import { CartItem } from "@/types/shop/product";
+import { getOrderKindRules, getOrderKindFromItems } from "@/utils/shop/orderKindUtils";
 import Image from "next/image";
-import { getColorFromOptions, isColorKey } from "@/utils/shopUtils";
+import { getColorFromOptions, isColorKey } from "@/utils/shop/shopUtils";
 import { FaChevronDown } from "react-icons/fa";
 import { User } from "@/types/user";
 import type { ApplePayPaymentRequest, ApplePayPaymentToken } from "@/types/sumup";
@@ -20,6 +25,7 @@ interface CheckoutFormProps {
     nif_label: string;
     nif_placeholder: string;
     section_delivery: string;
+    section_campus: string;
     section_payment: string;
     section_notes: string;
     notes_placeholder: string;
@@ -40,6 +46,7 @@ interface CheckoutFormProps {
     payment_in_person: string;
     error_no_campus: string;
     error_no_payment: string;
+    error_mixed_invalid: string;
     error_submit: string;
     error_apple_pay_context: string;
     error_apple_pay_unavailable: string;
@@ -107,6 +114,13 @@ export default function CheckoutForm({ user, dict }: CheckoutFormProps) {
   const total = cart.reduce((sum, item) => sum + unitPrice(item) * item.quantity, 0);
   const subtotal = total / 1.23; // Price without IVA
   const taxes = total - subtotal; // IVA amount (23% of subtotal)
+  const { orderKind: checkoutOrderKind, isMixedInvalid } = getOrderKindFromItems(
+    cart.map((item) => item.product)
+  );
+  const isSpecialOrderKind = checkoutOrderKind !== "normal";
+  const checkoutSource: OrderSource = checkoutOrderKind === "jantar_de_curso" ? "dinner" : "other";
+  const orderRules = getOrderKindRules(checkoutOrderKind, checkoutSource);
+  const allowedPaymentMethods = orderRules.paymentMethods;
 
   const apiItems = cart.map((item) => ({
     product_id: item.product.id,
@@ -129,6 +143,7 @@ export default function CheckoutForm({ user, dict }: CheckoutFormProps) {
         payment_method: selectedPayment,
         payment_reference: undefined,
         customer_phone: user.phone || phone || undefined,
+        order_source: checkoutSource,
       }),
     });
 
@@ -145,12 +160,16 @@ export default function CheckoutForm({ user, dict }: CheckoutFormProps) {
 
   const handleSubmit = async (selectedPayment: PaymentMethod | null = payment) => {
     if (!campus) {
-      // TODO: (ERROR)
       setError(dict.error_no_campus);
       return;
     }
-    if (selectedPayment !== "sumup" && selectedPayment !== "in-person") {
-      // TODO: (ERROR)
+
+    if (isMixedInvalid) {
+      setError(dict.error_mixed_invalid);
+      return;
+    }
+
+    if (!selectedPayment || !allowedPaymentMethods.includes(selectedPayment)) {
       setError(dict.error_no_payment);
       return;
     }
@@ -284,7 +303,6 @@ export default function CheckoutForm({ user, dict }: CheckoutFormProps) {
         }
       } catch (error) {
         session.completePayment(ApplePaySession.STATUS_FAILURE);
-        // TODO: (ERROR)
         setError(
           error instanceof Error ? error.message : dict.error_apple_pay_processing
         );
@@ -319,11 +337,21 @@ export default function CheckoutForm({ user, dict }: CheckoutFormProps) {
     { id: Campus._Taguspark, label: dict.campus_taguspark },
   ] as const;
 
-  const paymentOptions = [
-    { id: "sumup", label: dict.payment_card },
-    { id: "in-person", label: dict.payment_in_person },
-  ] as const;
-  const selectedStandardPayment = payment === "sumup" || payment === "in-person";
+  const paymentOptions = allowedPaymentMethods.map((method) => {
+    let label = getPaymentLabel(method);
+    if (method === "sumup") label = dict.payment_card;
+    if (method === "in-person") label = dict.payment_in_person;
+
+    return {
+      id: method,
+      label: label,
+    };
+  });
+
+  const isSelectedPaymentAllowed = payment !== null && allowedPaymentMethods.includes(payment);
+  const hasSelectedPayMethod = payment !== null && payment !== "apple-pay";
+  const isApplePayAllowed = applePayAvailable && allowedPaymentMethods.includes("apple-pay");
+  const showApplePay = isApplePayAllowed && !hasSelectedPayMethod;
 
   return (
     <div className={styles.container}>
@@ -346,22 +374,26 @@ export default function CheckoutForm({ user, dict }: CheckoutFormProps) {
                 />
               </div>
             </div>
-            <div className={styles.formGroup}>
-              <label>{dict.nif_label}</label>
-              <input
-                type="text"
-                value={nif}
-                onChange={(e) => setNif(e.target.value)}
-                placeholder={dict.nif_placeholder}
-                className={styles.input}
-              />
-            </div>
+            {!isSpecialOrderKind && (
+              <div className={styles.formGroup}>
+                <label>{dict.nif_label}</label>
+                <input
+                  type="text"
+                  value={nif}
+                  onChange={(e) => setNif(e.target.value)}
+                  placeholder={dict.nif_placeholder}
+                  className={styles.input}
+                />
+              </div>
+            )}
           </div>
         </section>
 
         <div className={styles.divider} />
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>{dict.section_delivery}</h2>
+          <h2 className={styles.sectionTitle}>
+            {isSpecialOrderKind ? dict.section_campus : dict.section_delivery}
+          </h2>
 
           <div className={styles.radioGroup}>
             {pickupOptions.map((opt) => (
@@ -417,7 +449,7 @@ export default function CheckoutForm({ user, dict }: CheckoutFormProps) {
             rows={4}
           />
         </section>
-        {selectedStandardPayment && (
+        {isSelectedPaymentAllowed && (
           <button
             className={styles.checkoutButton}
             onClick={() => handleSubmit()}
@@ -426,7 +458,7 @@ export default function CheckoutForm({ user, dict }: CheckoutFormProps) {
           </button>
         )}
 
-        {applePayAvailable && payment !== "in-person" && payment !== "sumup" && (
+        {showApplePay && (
           <button
             className={styles.applePayStandaloneButton}
             onClick={handleApplePayDirect}
@@ -506,15 +538,19 @@ export default function CheckoutForm({ user, dict }: CheckoutFormProps) {
           </div>
 
           <div className={styles.pricingSummary}>
-            <div className={styles.priceLine}>
-              <span>{dict.subtotal}</span>
-              <span>€{subtotal.toFixed(2)}</span>
-            </div>
-            <div className={styles.priceLine}>
-              <span>{dict.iva}</span>
-              <span>€{taxes.toFixed(2)}</span>
-            </div>
-            <div className={styles.priceDivider} />
+            {!isSpecialOrderKind && (
+              <>
+                <div className={styles.priceLine}>
+                  <span>{dict.subtotal}</span>
+                  <span>€{subtotal.toFixed(2)}</span>
+                </div>
+                <div className={styles.priceLine}>
+                  <span>{dict.iva}</span>
+                  <span>€{taxes.toFixed(2)}</span>
+                </div>
+                <div className={styles.priceDivider} />
+              </>
+            )}
             <div className={styles.totalLine}>
               <span>{dict.total}</span>
               <span>€{total.toFixed(2)}</span>
@@ -523,37 +559,47 @@ export default function CheckoutForm({ user, dict }: CheckoutFormProps) {
 
           <div className={styles.expandableWrapper}>
             <div className={styles.expandSection}>
-              <button
-                className={styles.expandButton}
-                onClick={() => setShowTaxInfo((v) => !v)}
-                aria-expanded={showTaxInfo}>
-                <span className={styles.expandText}>
-                  {dict.tax_info}
-                </span>
-                <FaChevronDown
-                  className={`${styles.expandIcon} ${showTaxInfo ? styles.expanded : ""}`}
-                />
-              </button>
-              {showTaxInfo && (
-                <div className={styles.expandContent}>
-                  {dict.tax_info_detail}
-                </div>
+              {!isSpecialOrderKind && (
+                <>
+                  <button
+                    className={styles.expandButton}
+                    onClick={() => setShowTaxInfo((v) => !v)}
+                    aria-expanded={showTaxInfo}>
+                    <span className={styles.expandText}>
+                      {dict.tax_info}
+                    </span>
+                    <FaChevronDown
+                      className={`${styles.expandIcon} ${showTaxInfo ? styles.expanded : ""}`}
+                    />
+                  </button>
+                  {showTaxInfo && (
+                    <div className={styles.expandContent}>
+                      {dict.tax_info_detail}
+                    </div>
+                  )}
+                </>
               )}
             </div>
             <div className={styles.expandSection}>
-              <button
-                className={styles.expandButton}
-                onClick={() => setShowDeliveryInfo((v) => !v)}
-                aria-expanded={showDeliveryInfo}>
-                <span className={styles.expandText}>{dict.delivery_estimate}</span>
-                <FaChevronDown
-                  className={`${styles.expandIcon} ${showDeliveryInfo ? styles.expanded : ""}`}
-                />
-              </button>
-              {showDeliveryInfo && (
-                <div className={styles.expandContent}>
-                  {dict.delivery_detail}
-                </div>
+              {!isSpecialOrderKind && (
+                <>
+                  <button
+                    className={styles.expandButton}
+                    onClick={() => setShowDeliveryInfo((v) => !v)}
+                    aria-expanded={showDeliveryInfo}>
+                    <span className={styles.expandText}>
+                      {dict.delivery_estimate}
+                    </span>
+                    <FaChevronDown
+                      className={`${styles.expandIcon} ${showDeliveryInfo ? styles.expanded : ""}`}
+                    />
+                  </button>
+                  {showDeliveryInfo && (
+                    <div className={styles.expandContent}>
+                      {dict.delivery_detail}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

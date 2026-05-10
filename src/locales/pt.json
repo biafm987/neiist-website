@@ -108,6 +108,7 @@
         "export_total": "Total (€)",
         "export_notes": "Notas",
         "export_products": "Produtos",
+        "export_updated_by": "Ultima modificação por",
         "export_sheet_orders": "Encomendas",
         "export_sheet_details": "Detalhes",
         "export_sheet_campus_inventory": "InventarioPorCampus",
@@ -162,6 +163,7 @@
         "nif_label": "NIF (Opcional)",
         "nif_placeholder": "123456789",
         "section_delivery": "2. Local de Entrega",
+        "section_campus": "2. Campus",
         "section_payment": "3. Método de Pagamento",
         "section_notes": "Notas (Opcional)",
         "notes_placeholder": "Adicione notas sobre o seu pedido...",
@@ -183,6 +185,7 @@
         "error_no_campus": "Por favor, seleciona o campus.",
         "error_no_payment": "Por favor, seleciona o método de pagamento.",
         "error_submit": "Erro ao submeter o pedido.",
+        "error_mixed_invalid": "Este pedido não pode misturar categorias especiais com outras categorias.",
         "error_apple_pay_context": "Apple Pay requere contexto seguro (HTTPS).",
         "error_apple_pay_unavailable": "Apple Pay não está disponível neste browser.",
         "error_apple_pay_device": "Apple Pay não está disponível neste dispositivo.",
@@ -828,6 +831,7 @@
     "pos_payment": {
         "close_label": "Fechar",
         "title": "Pagar Encomenda {number}",
+        "title_register_payment": "Registar Pagamento",
         "method_label": "Método de pagamento",
         "method_cash": "Dinheiro",
         "method_other": "Outro",
@@ -835,6 +839,7 @@
         "method_sumup": "SumUp Online",
         "method_apple_pay": "Apple Pay",
         "method_in_person": "Presencial",
+        "method_mbway": "MBWay",
         "reference_label": "Referência de pagamento",
         "reference_placeholder": "IBAN / MB Way / tx id",
         "reader_label": "Leitor SumUp",
@@ -863,6 +868,7 @@
         "payment_confirmed": "Pagamento confirmado com sucesso.",
         "error_payment": "Falha ao processar pagamento.",
         "confirm_cash": "Confirmas que recebeste o pagamento em dinheiro e está correto?",
+        "confirm_mbway": "Confirmas que recebeste o pagamento por MBWay e está correto?",
         "confirm_reference": "Confirmas que recebeste o pagamento da referência \"{reference}\" e está correto?"
     },
 

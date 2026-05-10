@@ -39,6 +39,13 @@ interface NavBarProps {
   };
   currentLocale: Locale;
 }
+const navLinks = [
+  { name: "Sobre Nós", href: "/about-us" },
+  { name: "Atividades", href: "/activities" },
+  /*{ name: "Blog", href: "/blog" },*/
+  { name: "Loja", href: "/shop" },
+  { name: "Jantar de Curso", href: "/dinner" },
+];
 
 export default function NavBar({ dict, currentLocale }: NavBarProps) {
   const router = useRouter();

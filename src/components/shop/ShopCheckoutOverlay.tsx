@@ -2,10 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { FaCheck } from "react-icons/fa";
+import { IoIosWarning } from "react-icons/io";
 import { useEffect, useRef, useCallback, useState } from "react";
 import styles from "@/styles/components/shop/ShopCheckoutOverlay.module.css";
 import PaymentProcessingSpinner from "@/components/shop/PaymentProcessingSpinner";
-import type { PaymentMethod, Order } from "@/types/shop";
+import { Order } from "@/types/shop/order";
+import { PaymentMethod } from "@/types/shop/payment";
 import type {
   SumUpCardInstance,
   SumUpCardMountOptions,
@@ -17,6 +19,7 @@ import type {
   CreateCheckoutResponse,
   ApiErrorResponse,
 } from "@/types/sumup";
+import { getCampusLocation } from "@/utils/shop/shopUtils";
 
 type FlowState = "loading" | "widget" | "processing" | "success" | "error";
 type VerifyResult = "paid" | "pending" | "failed";
@@ -35,8 +38,10 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 export default function ShopCheckoutOverlay({ orderId, paymentMethod }: Props) {
   const router = useRouter();
-  const isInPerson = paymentMethod === "in-person";
+  const isInPerson = paymentMethod === "in-person" || paymentMethod === "mbway";
   const isOnlinePayment = paymentMethod === "sumup" || paymentMethod === "apple-pay";
+  const shouldLoadOrder =
+    isOnlinePayment || paymentMethod === "mbway" || paymentMethod === "in-person";
 
   const [flowState, setFlowState] = useState<FlowState>("loading");
   const [checkoutId, setCheckoutId] = useState<string | null>(null);
@@ -175,9 +180,7 @@ export default function ShopCheckoutOverlay({ orderId, paymentMethod }: Props) {
             setError("Não foi possível confirmar o pagamento após autorização bancária.");
           }
         } else {
-          setError(
-            "O pagamento está pendente há demasiado tempo. Se já foste cobrado, contacta-nos."
-          );
+          setError("O pagamento está pendente há demasiado tempo. Se foi cobrado, contacta-nos.");
         }
 
         setFlowState("error");
@@ -383,7 +386,7 @@ export default function ShopCheckoutOverlay({ orderId, paymentMethod }: Props) {
   );
 
   useEffect(() => {
-    if (!isOnlinePayment || !orderId) return;
+    if (!shouldLoadOrder || !orderId) return;
 
     let cancelled = false;
     fetch(`/api/shop/orders/${orderId}`)
@@ -407,7 +410,7 @@ export default function ShopCheckoutOverlay({ orderId, paymentMethod }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [isOnlinePayment, orderId]);
+  }, [shouldLoadOrder, orderId]);
 
   useEffect(() => {
     if (!isOnlinePayment || !orderId || checkoutId) return;
@@ -534,23 +537,64 @@ export default function ShopCheckoutOverlay({ orderId, paymentMethod }: Props) {
     finalizeAndNavigate(orderId != null ? `/my-orders?orderId=${orderId}` : "/my-orders");
   }, [orderId, finalizeAndNavigate]);
 
+  const scheduleLink =
+    order?.campus === "alameda"
+      ? "https://docs.google.com/spreadsheets/d/1qlqOqU1zSD-lWX4i10Y_dXPz4FHqiD-KKXBEbTt5ngs/edit?gid=256603615#gid=256603615"
+      : "https://docs.google.com/spreadsheets/d/1qlqOqU1zSD-lWX4i10Y_dXPz4FHqiD-KKXBEbTt5ngs/edit?gid=0#gid=0";
+
   if (!isOnlinePayment) {
     return (
       <div className={styles.overlay}>
         <div className={styles.panel}>
           <div className={styles.checkIcon}>
-            <FaCheck size={48} />
+            {/*TODO: fix css so it has warning and check, separated componets */}
+            {isInPerson ? <IoIosWarning size={75} /> : <FaCheck size={48} />}
           </div>
           <h2 className={styles.title}>
-            {isInPerson ? "Encomenda Registada!" : "Encomenda Submetida!"}
+            {isInPerson ? "Encomenda Pendente!" : "Encomenda Submetida!"}
           </h2>
           <p className={styles.muted}>
             {isInPerson ? (
-              <>
-                A tua encomenda foi registada.
-                <br />
-                Paga presencialmente na banca.
-              </>
+              paymentMethod === "mbway" ? (
+                <>
+                  Para a tua encomenda ser confirmada conclui o pagamento.
+                  <br />
+                  {order ? (
+                    <>
+                      Transfere €{order.total_amount.toFixed(2)} via MBWay para o número:
+                      <br />
+                      <strong>{order.mbway_number ?? "Número indisponível"}</strong>
+                      <br />
+                      <strong>Instruções:</strong> na descrição da transferência indica{" "}
+                      <strong>{order.order_number}</strong> para conseguirmos identificar o teu
+                      pagamento.
+                      <br />
+                      Para mais informações por favor consulta o email.
+                    </>
+                  ) : (
+                    "A carregar os detalhes do pagamento..."
+                  )}
+                </>
+              ) : (
+                <>
+                  Para a tua encomenda ser confirmada conclui o pagamento.
+                  <br />
+                  Presencialmente na {getCampusLocation(order?.campus)}
+                  {order?.campus ? (
+                    <>
+                      <br />
+                      Consulta o email para os horários ou vê o horário aqui:{" "}
+                      <a
+                        href={scheduleLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: "#2863FD", textDecoration: "underline" }}>
+                        Horário
+                      </a>
+                    </>
+                  ) : null}
+                </>
+              )
             ) : (
               <>
                 Obrigado pela tua encomenda.
@@ -561,7 +605,7 @@ export default function ShopCheckoutOverlay({ orderId, paymentMethod }: Props) {
           </p>
           <div className={styles.actionButtons}>
             <button onClick={handleViewOrders} className={styles.btnPrimary}>
-              Ver Encomendas
+              {isInPerson ? "Continuar" : "Ver Encomendas"}
             </button>
           </div>
         </div>

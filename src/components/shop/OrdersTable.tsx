@@ -2,20 +2,17 @@
 
 import { useMemo, useRef, useState } from "react";
 import styles from "@/styles/components/shop/OrdersTable.module.css";
-import {
-  Order,
-  getStatusLabel,
-  getStatusCssClass,
-  ORDER_STATUS_CONFIG,
-  Product,
-  OrderStatus,
-} from "@/types/shop";
+import { Order } from "@/types/shop/order";
+import { getStatusLabel, getStatusCssClass } from "@/utils/shop/orderStatusUtils";
+import { OrderStatus, ORDER_STATUS_CONFIG } from "@/types/shop/orderStatus";
+import { Product } from "@/types/shop/product";
 import { FiSearch, FiCheck } from "react-icons/fi";
 import { TbFilter, TbTableExport } from "react-icons/tb";
 import * as XLSX from "xlsx";
 import Fuse from "fuse.js";
-import { getColorFromOptions, getCompactProductsSummary } from "@/utils/shopUtils";
+import { getColorFromOptions, getCompactProductsSummary } from "@/utils/shop/shopUtils";
 import { getFirstAndLastName } from "@/utils/userUtils";
+import { getOrderKindFromItems, getOrderStatusLabelForKind } from "@/utils/shop/orderKindUtils";
 import NewOrderModal from "./NewOrderModal";
 import PosPaymentOverlay, { type PosPaymentDict } from "@/components/shop/PosPaymentOverlay";
 import { useRouter } from "next/navigation";
@@ -107,6 +104,7 @@ interface OrdersTableProps {
       export_total: string;
       export_notes: string;
       export_products: string;
+      export_updated_by: string;
       export_sheet_orders: string;
       export_sheet_details: string;
       export_sheet_campus_inventory: string;
@@ -295,6 +293,7 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
           (order.customer_name?.toLowerCase().includes(query) ?? false) ||
           (order.user_istid?.toLowerCase().includes(query) ?? false) ||
           (order.customer_email?.toLowerCase().includes(query) ?? false) ||
+          (order.payment_reference?.toLocaleLowerCase().includes(query) ?? false) ||
           order.order_number.toLowerCase().includes(query)
       );
 
@@ -390,7 +389,12 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
     const unique = [...new Set(emails)];
     if (unique.length === 0) return;
     const bcc = encodeURIComponent(unique.join(","));
-    window.open(`https://mail.google.com/mail/?view=cm&fs=1&bcc=${bcc}`, "_blank");
+    window.open(
+      `https://accounts.google.com/AccountChooser?continue=${encodeURIComponent(
+        `https://mail.google.com/mail/?view=cm&fs=1&bcc=${bcc}`
+      )}`,
+      "_blank"
+    );
   }
 
   function handleSetPickupDeadline(): void {
@@ -514,6 +518,7 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
 
   const handleExport = () => {
     const ordersSheet = filtered.map((o) => ({
+      [dict.orders_table.export_status]: getOrderStatusLabelForKind(getOrderKindFromItems(o.items).orderKind, o.status, o),
       [dict.orders_table.export_number]: o.order_number,
       [dict.orders_table.export_date]: new Date(o.created_at).toLocaleString(locale),
       [dict.orders_table.export_name]: o.customer_name,
@@ -522,11 +527,11 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
       [dict.orders_table.export_ist_id]: o.user_istid,
       [dict.orders_table.export_campus]: o.campus,
       [dict.orders_table.export_phone]: o.customer_phone,
-      [dict.orders_table.export_status]: getStatusLabel(o.status),
       [dict.orders_table.export_payment_method]: o.payment_method,
       [dict.orders_table.export_payment_reference]: o.payment_reference,
       [dict.orders_table.export_total]: o.total_amount,
       [dict.orders_table.export_notes]: o.notes || "",
+      [dict.orders_table.export_updated_by || "Ultima modificação por"]: o.updated_by,
       [dict.orders_table.export_products]: o.items
         .map((it) => `${it.product_name} ${it.variant_label || ""} x${it.quantity}`)
         .join("; "),
@@ -874,7 +879,11 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
                     <td>
                       <span
                         className={`${styles.statusBadge} ${styles[getStatusCssClass(order.status)]}`}>
-                        {getStatusLabel(order.status)}
+                        {getOrderStatusLabelForKind(
+                          getOrderKindFromItems(order.items).orderKind,
+                          order.status,
+                          order
+                        )}
                       </span>
                     </td>
                   </tr>

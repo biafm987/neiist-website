@@ -19,8 +19,13 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# Data
+data/
+public/products
+
 # Environment Variables
 .env
+.venv
 
 # TypeScript
 *.tsbuildinfo
@@ -32,5 +37,4 @@ next-env.d.ts
 .DS_Store
 
 certificates
-
-data/
+/data

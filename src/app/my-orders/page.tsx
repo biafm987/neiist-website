@@ -17,7 +17,7 @@ export default async function MyOrdersPage({ searchParams }: PageProps) {
 
   const locale = await getLocale();
   const dict = await getDictionary(locale);
-  const [allOrders, products] = await Promise.all([getAllOrders(), getAllProducts()]);
+  const [allOrders, products] = await Promise.all([getAllOrders(), getAllProducts(true)]);
   const myOrders = jwtUser ? allOrders.filter((o) => o.user_istid === jwtUser.istid) : [];
 
   return (

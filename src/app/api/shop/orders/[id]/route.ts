@@ -2,19 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   updateOrder,
   setOrderState,
-  updateUser,
   mapOrderDbErrorToResponse,
   getOrderById,
 } from "@/utils/dbUtils";
 import { UserRole } from "@/types/user";
-import { getStatusLabel, PAYMENT_METHODS } from "@/types/shop";
+import { getOrderKindRules, getOrderKindFromItems } from "@/utils/shop/orderKindUtils";
+import { getStatusLabel } from "@/utils/shop/orderStatusUtils";
+import { PAYMENT_METHODS } from "@/types/shop/payment";
 import { serverCheckRoles } from "@/utils/permissionUtils";
 import type { User } from "@/types/user";
-import type { Order } from "@/types/shop";
+import { Order } from "@/types/shop/order";
 import {
-  getOrderPaidTemplate,
-  getOrderPendingTemplate,
-  getOrderStatusUpdateTemplate,
+  getPendingOrderEmailTemplate,
+  getStatusUpdateOrderEmailTemplate,
   sendEmail,
 } from "@/utils/emailUtils";
 
@@ -88,21 +88,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     if (body.customer_nif !== undefined) filteredUpdates.nif = body.customer_nif;
 
-    const phone = body.customer_phone !== undefined ? String(body.customer_phone ?? "") : undefined;
-
-    if (Object.keys(filteredUpdates).length === 0 && phone === undefined)
+    if (Object.keys(filteredUpdates).length === 0)
       return NextResponse.json({ error: "No updatable fields provided" }, { status: 400 });
 
     const isShopOps = isShopManagerOrAbove(roles ?? []);
 
     const onlyNotes =
-      Object.keys(filteredUpdates).length === 1 &&
-      filteredUpdates.notes !== undefined &&
-      phone === undefined;
+      Object.keys(filteredUpdates).length === 1 && filteredUpdates.notes !== undefined;
     const onlyInPersonSwitch =
-      Object.keys(filteredUpdates).length === 1 &&
-      filteredUpdates.payment_method === "in-person" &&
-      phone === undefined;
+      Object.keys(filteredUpdates).length === 1 && filteredUpdates.payment_method === "in-person";
 
     if (onlyNotes) {
       if (!isOrderOwner(order, user!) && !isShopOps) {
@@ -164,19 +158,31 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         return NextResponse.json({ error: "Invalid payment_method" }, { status: 400 });
     }
 
-    const updatedOrder = await updateOrder(orderId, filteredUpdates as Partial<Order>);
+    const stockOverride =
+      (userRoles.roles?.includes(UserRole._ADMIN) ?? false) && body.stock_override === true;
+
+    const updatedOrder = await updateOrder(
+      orderId,
+      filteredUpdates as Partial<Order>,
+      stockOverride,
+      user?.istid ?? "system"
+    );
     if (!updatedOrder)
       return NextResponse.json({ error: "Failed to update order" }, { status: 500 });
 
-    if (phone !== undefined && order.user_istid)
-      await updateUser(order.user_istid, { phone: phone || null });
-
     if (onlyInPersonSwitch && updatedOrder.customer_email) {
+      if (
+        !getOrderKindRules(getOrderKindFromItems(updatedOrder.items).orderKind)
+          .customerEmailsEnabled
+      )
+        return NextResponse.json(updatedOrder);
+
       try {
         await sendEmail({
           to: updatedOrder.customer_email,
           subject: `Encomenda ${updatedOrder.order_number} - Pendente`,
-          html: getOrderPendingTemplate(
+          html: getPendingOrderEmailTemplate(
+            getOrderKindFromItems(updatedOrder.items).orderKind,
             updatedOrder.order_number,
             updatedOrder.customer_name,
             updatedOrder.items,
@@ -219,41 +225,36 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   try {
     const body = await request.json();
     const { status } = body;
-    const { id } = await params;
-    const orderId = parseInt(id, 10);
+    const orderId = Number((await params).id);
     if (!status) return NextResponse.json({ error: "No status provided" }, { status: 400 });
+
+    if (status === "paid")
+      return NextResponse.json({ error: "Use POST /pay to mark order as paid" }, { status: 400 });
 
     const order = await getOrderById(orderId);
     if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
-    await setOrderState(orderId, status, userRoles.user?.istid ?? "system");
-
+    await setOrderState(orderId, status, userRoles.user!.istid);
     const updatedOrder = await getOrderById(orderId);
 
     if (updatedOrder?.customer_email) {
       const statusLabel = getStatusLabel(status);
-      const isPaid = status === "paid";
-      await sendEmail({
-        to: updatedOrder.customer_email,
-        subject: `Encomenda ${updatedOrder.order_number} - ${statusLabel}`,
-        html: isPaid
-          ? getOrderPaidTemplate(
-              updatedOrder.order_number,
-              updatedOrder.customer_name,
-              updatedOrder.items,
-              Number(updatedOrder.total_amount),
-              updatedOrder.campus,
-              updatedOrder.payment_method,
-              updatedOrder.payment_reference
-            )
-          : getOrderStatusUpdateTemplate(
-              updatedOrder.order_number,
-              updatedOrder.customer_name,
-              status,
-              statusLabel,
-              updatedOrder.campus
-            ),
-      });
+      const orderKindRules = getOrderKindRules(getOrderKindFromItems(updatedOrder.items).orderKind);
+
+      if (orderKindRules.customerEmailsEnabled) {
+        await sendEmail({
+          to: updatedOrder.customer_email,
+          subject: `Encomenda ${updatedOrder.order_number} - ${statusLabel}`,
+          html: getStatusUpdateOrderEmailTemplate(
+            getOrderKindFromItems(updatedOrder.items).orderKind,
+            updatedOrder.order_number,
+            updatedOrder.customer_name,
+            status,
+            statusLabel,
+            updatedOrder.campus
+          ),
+        });
+      }
     }
 
     return NextResponse.json(updatedOrder);
@@ -281,7 +282,7 @@ export async function DELETE(
 
   if (
     !isOrderOwner(order, user!) &&
-    !roles?.some((r) => [UserRole._ADMIN, UserRole._COORDINATOR].includes(r))
+    !roles?.some((role) => [UserRole._ADMIN, UserRole._COORDINATOR].includes(role))
   ) {
     return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
   }
