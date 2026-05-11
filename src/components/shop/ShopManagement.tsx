@@ -12,7 +12,7 @@ import ProductManagementCard from "./ProductManagementCard";
 import Fuse from "fuse.js";
 import styles from "@/styles/components/shop/ShopManagement.module.css";
 import ColorfulText from "../ColorfulText";
-import type { ShopManagementDict, ConfirmDialogDict, ProductFormDict, ShopManagementDict } from "@/types/i18n";
+import type { ShopManagementDict, ConfirmDialogDict, ProductFormDict } from "@/types/i18n";
 
 interface ShopManagementProps {
   products: Product[];
@@ -83,10 +83,9 @@ export default function ShopManagement({ products, categories, dict, locale }: S
   };
 
   const confirmMessages: Record<ConfirmAction["type"], string> = {
-    archive: "Tem a certeza que deseja arquivar este produto?",
-    restore: "Tem a certeza que deseja restaurar este produto?",
-    permanent:
-      "Tem a certeza que deseja eliminar definitivamente este produto? Esta ação não pode ser desfeita.",
+    archive: dict.confirm_archive,
+    restore: dict.confirm_restore,
+    permanent: dict.confirm_permanent,
   };
 
   const confirmAction = async () => {
@@ -114,10 +113,10 @@ export default function ShopManagement({ products, categories, dict, locale }: S
         window.location.reload();
       } else {
         const data = await response.json();
-        toast.error(data?.error ?? "Ocorreu um erro. Tenta novamente.");
+        toast.error(data?.error ?? dict.error_generic);
       }
     } catch {
-      toast.error("Ocorreu um erro. Tenta novamente.");
+      toast.error(dict.error_generic);
     }
 
     setShowConfirm(false);
@@ -142,21 +141,21 @@ export default function ShopManagement({ products, categories, dict, locale }: S
       )}
       <div className={styles.container}>
         <div className={styles.header}>
-          <ColorfulText className={styles.title} text={dict.shop_management.title} />
+          <ColorfulText className={styles.title} text={dict.title} />
           <button className={styles.addBtn} onClick={() => router.push("/shop/manage/new")}>
-            <FaPlus /> {dict.shop_management.add_product}
+            <FaPlus /> {dict.add_product}
           </button>
         </div>
 
         <div className={styles.filters}>
           <input
             type="text"
-            placeholder={dict.shop_management.search_placeholder}
+            placeholder={dict.search_placeholder}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
-            <option value="all">{dict.shop_management.all_categories}</option>
+            <option value="all">{dict.all_categories}</option>
             {categories.map((cat) => (
               <option key={cat.id} value={cat.name}>
                 {cat.name in dict.categories ? dict.categories[cat.name] : cat.name}
@@ -173,11 +172,11 @@ export default function ShopManagement({ products, categories, dict, locale }: S
             }}>
             <FiArchive />
             {showArchived
-              ? "Ver ativos"
-              : `Arquivados${archivedProducts.length > 0 ? ` (${archivedProducts.length})` : ""}`}
+              ? dict.view_active
+              : ` ${dict.archived}${archivedProducts.length > 0 ? ` (${archivedProducts.length})` : ""}`}
           </button>
           <button className={styles.addBtn} onClick={() => router.push("/shop/pos")}>
-            <PiContactlessPayment /> {dict.shop_management.pos_link}
+            <PiContactlessPayment /> {dict.pos_link}
           </button>
         </div>
 
@@ -186,18 +185,18 @@ export default function ShopManagement({ products, categories, dict, locale }: S
             <FiPackage size={64} />
             {isFiltering ? (
               <>
-                <p>Nenhum produto encontrado</p>
-                <span>Tenta ajustar os filtros ou a pesquisa</span>
+                <p>{dict.no_products_found}</p>
+                <span>{dict.adjust_filters}</span>
               </>
             ) : showArchived ? (
               <>
-                <p>Sem produtos arquivados</p>
-                <span>Produtos arquivados aparecerão aqui</span>
+                <p>{dict.no_archived_products}</p>
+                <span>{dict.no_archived_products_hint}</span>
               </>
             ) : (
               <>
-                <p>Ainda não há produtos</p>
-                <span>Clica em "Adicionar Produto" para começar</span>
+                <p>{dict.no_products}</p>
+                <span>{dict.no_products_hint}</span>
               </>
             )}
           </div>

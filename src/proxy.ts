@@ -163,7 +163,12 @@ export function proxy(req: NextRequest) {
     if (!canAccess(path, roles)) {
       if (path !== "/unauthorized") {
         response = NextResponse.redirect(new URL("/unauthorized", req.url));
+        addSecurityHeaders(response);
+        return response;
       }
+      const next = NextResponse.next();
+      addSecurityHeaders(next);
+      return next;
     }
   }
 

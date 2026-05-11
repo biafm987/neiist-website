@@ -10,7 +10,11 @@ import { FiSearch, FiCheck } from "react-icons/fi";
 import { TbFilter, TbTableExport } from "react-icons/tb";
 import * as XLSX from "xlsx";
 import Fuse from "fuse.js";
-import { getColorFromOptions, getCompactProductsSummary } from "@/utils/shop/shopUtils";
+import {
+  getColorFromOptions,
+  getCompactProductsSummary,
+  formatVariantSimple,
+} from "@/utils/shop/shopUtils";
 import { getFirstAndLastName } from "@/utils/userUtils";
 import { getOrderKindFromItems, getOrderStatusLabelForKind } from "@/utils/shop/orderKindUtils";
 import NewOrderModal from "./NewOrderModal";
@@ -109,9 +113,9 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
   );
 
   const uniqueProducts = useMemo(() => {
-    const orderIdSet = new Set<string>();
-    orders.forEach((order) => order.items.forEach((item) => orderIdSet.add(item.product_name)));
-    return [...orderIdSet].sort();
+    const productNameSet = new Set<string>();
+    orders.forEach((order) => order.items.forEach((item) => productNameSet.add(item.product_name)));
+    return [...productNameSet].sort();
   }, [orders]);
 
   const availableStatuses = useMemo(() => {
@@ -418,7 +422,8 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
         const colorInfo = getColorFromOptions(item.variant_options, item.variant_label);
         const cor = colorInfo.name || "";
         const tamanho =
-          item.variant_options?.Tamanho || item.variant_options?.Size || item.variant_label || "";
+          formatVariantSimple(item.variant_options ?? undefined, item.variant_label ?? undefined)
+            .text || "";
         const key = `${modelo}|||${cor}|||${tamanho}`;
         if (!statsMapDetalhes[key]) {
           statsMapDetalhes[key] = { modelo, cor, tamanho, quantidade: 0 };

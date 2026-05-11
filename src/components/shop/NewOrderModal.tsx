@@ -55,7 +55,9 @@ const displayValue = (key: string, val: string) => {
 const normalizeOptionValue = (value?: string) => (value ? value.replace(/["'\\]/g, "").trim() : "");
 
 const variantLabel = (name: string, options: Record<string, string>) => {
-  const values = Object.entries(options).map(([k, v]) => displayValue(k, v));
+  const values = Object.entries(options)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => displayValue(k, v));
   return values.length ? `${name} - ${values.join(" | ")}` : name;
 };
 
@@ -71,7 +73,7 @@ const getOptionKeys = (product: Product) => {
     });
   });
 
-  return keys;
+  return keys.sort();
 };
 
 const matchesSelections = (variant: ProductVariant, selections: Record<string, string>) =>
@@ -104,8 +106,8 @@ const resolveVariant = (
 
 const buildFallbackUser = (order: Order): User => ({
   istid: order.user_istid ?? "",
-  name: order.customer_name || "",
-  email: order.customer_email || "",
+  name: order.customer_name ?? "",
+  email: order.customer_email ?? "",
   alternativeEmail: null,
   alternativeEmailVerified: true,
   phone: order.customer_phone ?? null,
@@ -238,17 +240,14 @@ export default function NewOrderModal({
 
     const queryTokens = normalizedQuery.split(/\s+/).filter(Boolean);
 
-    const matches = allUsers
-      .map((user) => {
-        const name = normalizeText(user.name || "");
-        const nameTokens = name.split(/\s+/).filter(Boolean);
-        for (const qtok of queryTokens) {
-          const found = nameTokens.some((nameToken) => nameToken.startsWith(qtok));
-          if (!found) return null;
-        }
-        return user;
-      })
-      .filter(Boolean) as User[];
+    const matches = allUsers.filter((user) => {
+      const name = normalizeText(user.name || "");
+      const nameTokens = name.split(/\s+/).filter(Boolean);
+      for (const qtok of queryTokens) {
+        if (!nameTokens.some((token) => token.startsWith(qtok))) return false;
+      }
+      return true;
+    });
 
     return matches.sort((a, b) => a.name.localeCompare(b.name)).slice(0, 10);
   }, [userSearch, allUsers]);
@@ -491,31 +490,31 @@ export default function NewOrderModal({
   const handleSubmit = async (stockOverride = false) => {
     if (!selectedProducts.length) {
       // TODO: (ERROR)
-      setError("Por favor, selecione pelo menos um produto.");
+      setError(dict.new_order_modal.errors.no_products);
       return;
     }
     if (!isEditMode && !campus) {
       // TODO: (ERROR)
-      setError("Por favor, selecione o campus.");
+      setError(dict.new_order_modal.errors.no_campus);
       return;
     }
     if (selectedOrderClassification.isMixedInvalid) {
-      setError("Este pedido nao pode misturar categorias especiais com outras categorias.");
+      setError(dict.new_order_modal.errors.mixed_invalid);
       return;
     }
 
     const guestCheckout = !selectedUser;
     if (guestCheckout) {
       if (isUserRequiredForSelectedOrder && !guestName.trim()) {
-        setError("Por favor, indique o nome do cliente.");
+        setError(dict.new_order_modal.errors.guest_name);
         return;
       }
       if (isUserRequiredForSelectedOrder && !guestEmail.trim()) {
-        setError("Por favor, indique o email do cliente.");
+        setError(dict.new_order_modal.errors.guest_email);
         return;
       }
       if (isUserRequiredForSelectedOrder && !phone.trim()) {
-        setError("Por favor, indique o telemóvel do cliente.");
+        setError(dict.new_order_modal.errors.guest_phone);
         return;
       }
     }
@@ -900,21 +899,22 @@ export default function NewOrderModal({
         {showGuestConfirm && (
           <ConfirmDialog
             open={showGuestConfirm}
-            message="Tem a certeza que deseja vender esta encomenda como Guest?"
+            message={dict.new_order_modal.guest_confirm}
             onConfirm={startGuestFlow}
             onCancel={() => setShowGuestConfirm(false)}
+            dict={dict.confirm_dialog}
           />
         )}
         {showGuestNameInput && (
           <InputTextDialog
             open={showGuestNameInput}
-            title="Guest"
-            label="Nome do cliente"
+            title={dict.new_order_modal.guest_title}
+            label={dict.new_order_modal.guest_name_label}
             initialValue={guestName}
-            placeholder="Nome do cliente"
+            placeholder={dict.new_order_modal.guest_name_placeholder}
             onConfirm={(value) => {
               if (!value) {
-                setError("Por favor, indique o nome do cliente.");
+                setError(dict.new_order_modal.errors.guest_name);
                 return;
               }
               setGuestName(value);
@@ -927,14 +927,14 @@ export default function NewOrderModal({
         {showGuestEmailInput && (
           <InputTextDialog
             open={showGuestEmailInput}
-            title="Guest"
-            label="Email do cliente"
+            title={dict.new_order_modal.guest_title}
+            label={dict.new_order_modal.guest_email_label}
             initialValue={guestEmail}
-            placeholder="mail@example.com"
+            placeholder={dict.new_order_modal.guest_email_placeholder}
             type="email"
             onConfirm={(value) => {
               if (!value) {
-                setError("Por favor, indique o email do cliente.");
+                setError(dict.new_order_modal.errors.guest_email);
                 return;
               }
               setGuestEmail(value);
@@ -947,14 +947,14 @@ export default function NewOrderModal({
         {showGuestPhoneInput && (
           <InputTextDialog
             open={showGuestPhoneInput}
-            title="Guest"
-            label="Telemóvel do cliente"
+            title={dict.new_order_modal.guest_title}
+            label={dict.new_order_modal.guest_phone_label}
             initialValue={phone}
-            placeholder="+351 000 000 000"
+            placeholder={dict.new_order_modal.guest_phone_placeholder}
             type="tel"
             onConfirm={(value) => {
               if (!value) {
-                setError("Por favor, indique o telemóvel do cliente.");
+                setError(dict.new_order_modal.errors.guest_phone);
                 return;
               }
               setPhone(value);

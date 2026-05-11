@@ -8,15 +8,14 @@ import styles from "@/styles/components/shop/ProductCard.module.css";
 
 export default function ProductCard({ product, dict }: { product: Product; dict?: any }) {
   const [imageIndex, setImageIndex] = useState(0);
-
   const images = [
     ...new Set([
       ...(product.images || []),
       ...(product.variants?.flatMap((v) => v.images || []) || []),
     ]),
   ];
-
   const currentImage = images[imageIndex];
+
   return (
     <Link href={`/shop/${product.id}`} className={styles.card}>
       <div className={`${styles.imageWrapper} ${!currentImage ? styles.imageWrapperEmpty : ""}`}>
@@ -32,7 +31,7 @@ export default function ProductCard({ product, dict }: { product: Product; dict?
         ) : (
           <div className={styles.placeholder}>
             <FiImage size={40} />
-            <span>Sem Imagem</span>
+            <span>{dict.no_image_label}</span>
           </div>
         )}
       </div>

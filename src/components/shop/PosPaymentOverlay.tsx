@@ -11,6 +11,7 @@ import { getOrderKindRules, getOrderKindFromItems } from "@/utils/shop/orderKind
 import type { SumUpReader } from "@/types/sumup";
 import PaymentProcessingSpinner from "@/components/shop/PaymentProcessingSpinner";
 import styles from "@/styles/components/shop/PosPaymentOverlay.module.css";
+import type { PosPaymentOverlayDict } from "@/types/i18n";
 
 export interface PosPaymentDict {
   close_label: string;
@@ -54,6 +55,8 @@ export interface PosPaymentDict {
   confirm_cash: string;
   confirm_mbway: string;
   confirm_reference: string;
+  mbway_send_to: string;
+  mbway_number_unavailable: string;
 }
 
 type Props = {
@@ -102,6 +105,14 @@ export default function PosPaymentOverlay({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const autoStartedRef = useRef(false);
   const confirmInFlightRef = useRef(false);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const methodLabel = (method: PaymentMethod): string => {
     const labels: Record<PaymentMethod, string> = {
@@ -251,7 +262,7 @@ export default function PosPaymentOverlay({
     ): Promise<{ paid: boolean; transactionCode: string | null }> => {
       const startedAt = Date.now();
 
-      while (Date.now() - startedAt < 90_000) {
+      while (isMountedRef.current && Date.now() - startedAt < 90_000) {
         const txRes = await fetch(
           `/api/shop/sumup/transactions/status?clientTransactionId=${encodeURIComponent(clientTransactionId)}`,
           { cache: "no-store" }
@@ -483,7 +494,7 @@ export default function PosPaymentOverlay({
     paymentMethod === "cash"
       ? d.confirm_cash
       : paymentMethod === "mbway"
-        ? (d.confirm_mbway || "Confirmas que recebeste o pagamento por MBWay e está correto?")
+        ? (d.confirm_mbway)
         : d.confirm_reference.replace("{reference}", paymentReference.trim() || "-");
 
   if (flowState === "processing" || flowState === "success") {
@@ -524,7 +535,7 @@ export default function PosPaymentOverlay({
 
         <h3 className={styles.title}>
           {isExistingOrderPaymentFlow 
-            ? (d.title_register_payment || "Registar Pagamento")
+            ? (d.title_register_payment)
             : d.title.replace("{number}", order.order_number)}
         </h3>
 
@@ -560,7 +571,7 @@ export default function PosPaymentOverlay({
         )}
         {paymentMethod === "mbway" && order.payment_method !== "mbway" && (
           <div className={styles.label}>
-            Enviar MBWay para: <strong>{order.mbway_number || "Número não disponível"}</strong>
+            {d.mbway_send_to} <strong>{order.mbway_number || d.mbway_number_unavailable}</strong>
           </div>
         )}
 

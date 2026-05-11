@@ -484,7 +484,7 @@ export default function ProductForm({
         updateForm({ category: data.category.name });
       }
     } catch {
-      toast.error("Erro ao criar categoria.");
+      toast.error(dict.error_create_category);
     }
   };
 
@@ -658,9 +658,9 @@ export default function ProductForm({
             </div>
 
             <div className={styles.stackBlock}>
-              <SectionTitle icon={<FaBox />}>Stock</SectionTitle>
+              <SectionTitle icon={<FaBox />}>{dict.stock}</SectionTitle>
 
-              <Field label="Tipo de Stock" icon={<FaLayerGroup />}>
+              <Field label={dict.stock_type_label} icon={<FaLayerGroup />}>
                 <MultiSelectDropdown
                   availableItems={[dict.limited_stock, dict.on_demand_stock]}
                   selectedItems={[
@@ -776,7 +776,7 @@ export default function ProductForm({
                         { id: Math.random().toString(), name: "", values: [] },
                       ])
                     }>
-                    <FaPlus size={12} /> Adicionar
+                    <FaPlus size={12} /> {dict.add_button}
                   </button>
                 )}
               </div>
@@ -789,7 +789,7 @@ export default function ProductForm({
                         type="button"
                         className={`${styles.tabButton} ${activeTab === "__groups__" ? styles.activeTab : ""}`}
                         onClick={() => setActiveTab("__groups__")}>
-                        Grupos
+                        {dict.groups_tab}
                       </button>
                     )}
                     {hasVariants && (
@@ -797,7 +797,7 @@ export default function ProductForm({
                         type="button"
                         className={`${styles.tabButton} ${activeTab === "__combos__" ? styles.activeTab : ""}`}
                         onClick={() => setActiveTab("__combos__")}>
-                        Combinações{" "}
+                        {dict.combos_tab}{" "}
                         <span className={styles.badge}>
                           {variants.filter((v) => v.active).length}
                         </span>
@@ -811,12 +811,12 @@ export default function ProductForm({
                         {groupKeys.length > 0 && secondaryGroupsCount > 0 && (
                           <div className={styles.inputRow}>
                             <span className={styles.hint}>
-                              Mostrar grupos secundários ({secondaryGroupsCount})
+                              {dict.show_secundary_groups} ({secondaryGroupsCount})
                             </span>
                             <ToggleSwitch
                               checked={showSecondaryGroups}
                               onChange={setShowSecondaryGroups}
-                              aria-label="Mostrar grupos secundários"
+                              aria-label={dict.show_secundary_groups}
                             />
                           </div>
                         )}

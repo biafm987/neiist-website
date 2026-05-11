@@ -9,6 +9,7 @@ import { FaMapMarkerAlt, FaCalendarAlt, FaClock } from "react-icons/fa";
 import penguinImg from "@/assets/events/DinnerPenguin.png";
 import localFont from "next/font/local";
 import styles from "@/styles/pages/DinnerPage.module.css";
+import { getLocale, getDictionary } from "@/lib/i18n";
 
 const handelsonTwo = localFont({
   src: "../../assets/fonts/handelson-two.otf",
@@ -16,6 +17,8 @@ const handelsonTwo = localFont({
 });
 
 export default async function DinnerPage() {
+  const locale = await getLocale();
+  const dictionary = await getDictionary(locale);
   const userRoles = await serverCheckRoles([]);
   const products = await getAllProducts(true);
   const productById = new Map(products.map((product) => [product.id, product]));
@@ -33,7 +36,7 @@ export default async function DinnerPage() {
   if (!jantarProduct) {
     return (
       <div className={styles.container}>
-        <p>Produto de Jantar de Curso não encontrado</p>
+        <p>{dictionary.dinner.not_found}</p>
       </div>
     );
   }
@@ -60,33 +63,32 @@ export default async function DinnerPage() {
               </h1>
 
               <p className={`${styles.signedUpMessage} ${handelsonTwo.className}`}>
-                O teu lugar no jantar de curso está garantido! Prepara-te, temos surpresas à tua
-                espera.
+              {dictionary.dinner.signed_up_message}
               </p>
 
               <ul className={`${styles.infoList} ${handelsonTwo.className}`}>
                 <InfoListItem
                   icon={<FaMapMarkerAlt />}
-                  label="Local"
-                  value="MADSpot"
-                  url="https://www.instagram.com/mad_spot_fa/"
+                  label={dictionary.dinner.location_label}
+                  value={dictionary.dinner.location_value}
+                  url={dictionary.dinner.location_url}
                 />
-                <InfoListItem icon={<FaCalendarAlt />} label="Data" value="21 de maio" />
-                <InfoListItem icon={<FaClock />} label="Hora" value="20h00 - 04h00" />
+                <InfoListItem icon={<FaCalendarAlt />} label={dictionary.dinner.date_label} value={dictionary.dinner.date_value} />
+                <InfoListItem icon={<FaClock />} label={dictionary.dinner.time_label} value={dictionary.dinner.time_value} />
               </ul>
 
               {!isUnlocked ? (
                 <div className={styles.lockedSection}>
                   <p className={`${styles.unlockTimeMessage} ${handelsonTwo.className}`}>
-                    O conteúdo será desbloqueado às{" "}
-                    <span className={styles.highlight}>20h do dia 21 de maio</span>
+                    {dictionary.dinner.unlock_time_message}{" "}
+                    <span className={styles.highlight}>{dictionary.dinner.unlock_highlight}</span>
                   </p>
                   <Countdown />
                 </div>
               ) : (
                 <div className={styles.unlockedSection}>
                   <p className={`${styles.unlockMessage} ${handelsonTwo.className}`}>
-                    🎉 Já podes aceder às surpresas!
+                    {dictionary.dinner.unlocked_message}
                   </p>
                 </div>
               )}
@@ -95,7 +97,7 @@ export default async function DinnerPage() {
             <div className={styles.rightColumn}>
               <Image
                 src={penguinImg}
-                alt="Poster do Jantar de Curso"
+                alt={dictionary.dinner.poster_alt}
                 className={styles.image}
                 priority
               />
@@ -119,29 +121,29 @@ export default async function DinnerPage() {
           <ul className={`${styles.infoList} ${handelsonTwo.className}`}>
             <InfoListItem
               icon={<FaMapMarkerAlt />}
-              label="Local"
-              value="MADSpot"
-              url="https://www.instagram.com/mad_spot_fa/"
+              label={dictionary.dinner.location_label}
+              value={dictionary.dinner.location_value}
+              url={dictionary.dinner.location_url}
             />
-            <InfoListItem icon={<FaCalendarAlt />} label="Data" value="21 de maio" />
-            <InfoListItem icon={<FaClock />} label="Hora" value="20h00 - 04h00" />
+            <InfoListItem icon={<FaCalendarAlt />} label={dictionary.dinner.date_label} value={dictionary.dinner.date_value} />
+            <InfoListItem icon={<FaClock />} label={dictionary.dinner.time_label} value={dictionary.dinner.time_value} />
           </ul>
 
           <p className={`${styles.description} ${handelsonTwo.className}`}>
-            Junta-te a nós para um jantar inesquecível!
+            {dictionary.dinner.description}
           </p>
 
           <Link
             href={`/shop/${jantarProduct.id}`}
             className={`${styles.button} ${handelsonTwo.className}`}>
-            Comprar Já
+            {dictionary.dinner.buy_button}
           </Link>
         </div>
 
         <div className={styles.rightColumn}>
           <Image
             src={penguinImg}
-            alt="Poster do Jantar de Curso"
+            alt={dictionary.dinner.poster_alt}
             className={styles.image}
             priority
           />

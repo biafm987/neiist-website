@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useCallback, useRef, type CSSProperties } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo, type CSSProperties } from "react";
 import styles from "@/styles/components/shop/OrderDetailsOverlay.module.css";
 import { Order } from "@/types/shop/order";
 import { OrderStatus } from "@/types/shop/orderStatus";
@@ -21,41 +21,34 @@ import { FaCheck, FaExclamationTriangle } from "react-icons/fa";
 import { toast } from "sonner";
 import { FiChevronDown, FiChevronUp, FiEdit2 } from "react-icons/fi";
 import ConfirmDialog from "@/components/layout/ConfirmDialog";
-import { getColorFromOptions, isColorKey, formatVariantSimple } from "@/utils/shop/shopUtils";
+import { getColorFromOptions, formatVariantSimple } from "@/utils/shop/shopUtils";
 import { FaArrowRightLong } from "react-icons/fa6";
 import NewOrderModal from "./NewOrderModal";
-import PosPaymentOverlay, { type PosPaymentDict } from "@/components/shop/PosPaymentOverlay";
+import PosPaymentOverlay, { type PosPaymentDict }from "@/components/shop/PosPaymentOverlay";
 import { PENDING_PAYMENT_METHODS } from "@/types/shop/payment";
+import type { OrderDetailsOverlayDict } from "@/types/i18n";
 
-function formatVariant(options?: Record<string, string>, label?: string) {
-  const { text } = formatVariantSimple(options ?? undefined, label ?? undefined);
-  return text || "-";
-}
 
 function getPaymentDisplay(order: Order) {
   if (!order.payment_method) return "";
 
-  if (order.payment_method === "mbway")
-    return `${getPaymentLabel(order.payment_method)} - ${order.mbway_number}`;
-
-  return getPaymentLabel(order.payment_method);
+  const label = getPaymentLabel(order.payment_method);
+  return order.payment_method === "mbway" && order.mbway_number
+    ? `${label} - ${order.mbway_number}`
+    : label;
 }
 
 function hasPaymentReference(order: Order): boolean {
-  const paymentReference = order.payment_reference?.trim();
-  return (
-    (order.payment_method === "sumup" ||
-      order.payment_method === "sumup-tpa" ||
-      order.payment_method === "other" ||
-      order.payment_method === "apple-pay") &&
-    Boolean(paymentReference)
-  );
+  if (!order.payment_method) return false;
+
+  const methodsWithRef = ["sumup", "sumup-tpa", "other", "apple-pay"];
+  return methodsWithRef.includes(order.payment_method) && !!order.payment_reference?.trim();
 }
 
-function getPaymentButtonLabel(paymentMethod?: Order["payment_method"]): string {
+function getPaymentButtonLabel(paymentMethod: Order["payment_method"] | undefined, d: OrderDetailsOverlayDict["order_details"]): string {
   return paymentMethod && PENDING_PAYMENT_METHODS.has(paymentMethod)
-    ? "Registar Pagamento"
-    : "Finalizar Encomenda";
+    ? d.register_payment
+    : d.finalize_order;
 }
 
 interface OrderDetailOverlayProps {
@@ -93,7 +86,7 @@ export default function OrderDetailOverlay({
   const [showEditOrderModal, setShowEditOrderModal] = useState(false);
   const [showPaymentOverlay, setShowPaymentOverlay] = useState(false);
 
-  const paymentButtonLabel = getPaymentButtonLabel(order?.payment_method);
+  const paymentButtonLabel = getPaymentButtonLabel(order?.payment_method, d);
 
   useEffect(() => {
     setOrder(orders.find((o) => o.id === orderId) || null);
@@ -109,17 +102,12 @@ export default function OrderDetailOverlay({
   }, [order?.notes]);
 
   const deadlineToastShownRef = useRef(false);
-  const isDeadlineNear = (() => {
+
+  const isDeadlineNear = useMemo(() => {
     if (!order?.pickup_deadline) return false;
-    try {
-      const dl = new Date(order.pickup_deadline);
-      const now = new Date();
-      const diffDays = (dl.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-      return diffDays <= 28 && diffDays >= 0;
-    } catch {
-      return false;
-    }
-  })();
+    const diffDays = (new Date(order.pickup_deadline).getTime() - Date.now()) / 86400000;
+    return !isNaN(diffDays) && diffDays >= 0 && diffDays <= 28;
+  }, [order?.pickup_deadline]);
 
   const showDeadlineToast = useCallback(() => {
     if (!order?.pickup_deadline) return;
@@ -153,17 +141,17 @@ export default function OrderDetailOverlay({
   }, [router, basePath]);
 
   const attemptClose = useCallback(() => {
-    if (!order) {
-      handleCloseImmediate();
-      return;
-    }
-    const currentNotes = order.notes ?? "";
-    if ((notesDraft ?? "") !== currentNotes && notesEditing) {
+    if (order && notesEditing && notesDraft !== (order.notes ?? "")) {
       setShowSaveConfirm(true);
-      return;
+    } else {
+      handleCloseImmediate();
     }
-    handleCloseImmediate();
   }, [order, notesEditing, notesDraft, handleCloseImmediate]);
+
+  const handleCancelNotes = useCallback(() => {
+    if (notesDraft !== (order?.notes ?? "")) setShowSaveConfirm(true);
+    else setNotesEditing(false);
+  }, [notesDraft, order?.notes]);
 
   const handleStatusChange = async (status: OrderStatus) => {
     if (!order) return;
@@ -254,7 +242,7 @@ export default function OrderDetailOverlay({
 
   const saveNotes = async (): Promise<boolean> => {
     if (!order) return false;
-    if ((order.notes ?? "") === (notesDraft ?? "")) {
+    if ((order.notes ?? "") === notesDraft) {
       setNotesEditing(false);
       return true;
     }
@@ -352,7 +340,7 @@ export default function OrderDetailOverlay({
               {hasPaymentReference(order) && (
                 <div className={styles.infoColumn}>
                   <div className={styles.infoItemInline}>
-                    <label>Referência de Pagamento:</label>
+                    <label>{d.payment_reference_label}</label>
                     <p>{order.payment_reference?.trim()}</p>
                   </div>
                 </div>
@@ -387,31 +375,11 @@ export default function OrderDetailOverlay({
                     item.variant_label ?? undefined
                   );
 
-                  const nonColorParts: string[] = (() => {
-                    if (item.variant_options && Object.keys(item.variant_options).length > 0) {
-                      return Object.entries(item.variant_options)
-                        .filter(([k]) => !isColorKey(k))
-                        .map(([k, v]) => `${k.trim()}: ${v}`);
-                    }
-                    if (item.variant_label) {
-                      const parts = item.variant_label
-                        .split(/\||,/)
-                        .map((p) => p.trim())
-                        .filter(Boolean);
-                      return parts.filter((part) => {
-                        const [k] = part.split(":");
-                        return !isColorKey(k);
-                      });
-                    }
-                    return [];
-                  })();
                   const variantTextFallback =
-                    nonColorParts.length > 0
-                      ? nonColorParts.join(", ")
-                      : formatVariant(
-                          item.variant_options ?? undefined,
-                          item.variant_label ?? undefined
-                        );
+                    formatVariantSimple(
+                      item.variant_options ?? undefined,
+                      item.variant_label ?? undefined
+                    ).text || "-";
                   return (
                     <div key={idx} className={styles.tableRow}>
                       <span>{item.product_name}</span>
@@ -466,18 +434,12 @@ export default function OrderDetailOverlay({
                         className={styles.notesInput}
                         value={notesDraft}
                         onChange={(e) => setNotesDraft(e.target.value)}
-                        onBlur={() => {
-                          const currentNotes = order.notes ?? "";
-                          if ((notesDraft ?? "") !== currentNotes) setShowSaveConfirm(true);
-                          else setNotesEditing(false);
-                        }}
+                        onBlur={handleCancelNotes}
                         onKeyDown={(e) => {
                           if (e.key === "Escape") {
                             e.preventDefault();
                             e.stopPropagation();
-                            const currentNotes = order.notes ?? "";
-                            if ((notesDraft ?? "") !== currentNotes) setShowSaveConfirm(true);
-                            else setNotesEditing(false);
+                            handleCancelNotes();
                           }
                         }}
                       />
@@ -510,7 +472,7 @@ export default function OrderDetailOverlay({
                     <div className={styles.actionButtons}>
                       {canSetPaid && (
                         <button
-                          className={styles.buttonOutline}
+                          className={styles.buttonPrimary}
                           onClick={() => setShowPaymentOverlay(true)}>
                           {paymentButtonLabel}
                         </button>
@@ -570,6 +532,7 @@ export default function OrderDetailOverlay({
             ) : (
               <>
                 {order.status !== "cancelled" && (
+                  <div className={styles.progressContainer}>
                     <ul className={styles.progressbar} style={progressBarStyle}>
                       {progressSteps.map((step, index) => {
                         const isStepActive = step.activeStatuses.includes(order.status);

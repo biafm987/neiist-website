@@ -3,6 +3,7 @@
         "about_us": "About us",
         "activities": "Activities",
         "shop": "Shop",
+        "dinner": "Course Dinner",
         "menu": {
             "profile": "Profile",
             "my_orders": "My Orders",
@@ -15,6 +16,24 @@
             "logout": "Log out",
             "user_photo_alt": "User photo"
         }
+    },
+
+    "dinner": {
+        "not_found": "Course Dinner product not found",
+        "signed_up_message": "Your place at the course dinner is guaranteed! Get ready, we have surprises waiting for you.",
+        "unlock_time_message": "The content will be unlocked at",
+        "unlock_highlight": "8 PM on May 21st",
+        "unlocked_message": "🎉 You can now access the surprises!",
+        "description": "Join us for an unforgettable dinner!",
+        "buy_button": "Buy Now",
+        "poster_alt": "Course Dinner Poster",
+        "location_label": "Location",
+        "date_label": "Date",
+        "date_value": "May 21st",
+        "time_label": "Time",
+        "time_value": "8:00 PM - 4:00 AM",
+        "location_value": "MADSpot",
+        "location_url": "https://www.instagram.com/mad_spot_fa/"
     },
 
     "layout_navbar": {
@@ -232,6 +251,14 @@
         "title_letters": ["S","h","o","p"],
         "subtitle": "Products that represent your course!",
         "not_found": "Product not found",
+        "no_image_label": "No image",
+        "size_guide_title": "Size Guide",
+        "size_guide_link": "Size Guide",
+        "size_guide_text": "Check our {link} for more details.",
+        "delivery_title": "Delivery Times",
+        "delivery_text": "Order by December 25th to receive between January 20th and 25th. Orders after this date will have a longer waiting time.",
+        "error_deadline": "The order deadline for this product has passed.",
+        "error_unavailable": "This product is no longer available for purchase.",
         "breadcrumbs": { "shop": "Shop" },
         "labels": { "quantity": "Quantity" },
         "buttons": { "add_to_cart": "Add to Cart" },
@@ -280,7 +307,13 @@
             "error_saving_product": "Error saving product",
             "error": "Error",
             "default_option_color": "Color",
-            "default_option_size": "Size"
+            "default_option_size": "Size",
+            "stock_type_label": "Stock Type",
+            "stock": "Stock",
+            "add_button": "Add",
+            "groups_tab": "Groups",
+            "combos_tab": "Combinations",
+            "show_secundary_groups": "Show Secondary Groups"
         },
         "categories": {
             "Vestuário": "Clothing"
@@ -611,7 +644,23 @@
         "error_no_campus": "Please select a campus.",
         "error_no_user": "Please select a user.",
         "error_create": "Failed to create order",
-        "error_update": "Failed to update order"
+        "error_update": "Failed to update order",
+        "guest_confirm": "Are you sure you want to sell this order as a Guest?",
+        "guest_title": "Guest",
+        "guest_name_label": "Client Name",
+        "guest_name_placeholder": "Client Name",
+        "guest_email_label": "Client Email",
+        "guest_email_placeholder": "mail@example.com",
+        "guest_phone_label": "Client Phone",
+        "guest_phone_placeholder": "+351 000 000 000",
+        "errors": {
+            "no_products": "Please select at least one product.",
+            "no_campus": "Please select a campus.",
+            "mixed_invalid": "This order cannot mix special categories with other categories.",
+            "guest_name": "Please provide the client's name.",
+            "guest_email": "Please provide the client's email.",
+            "guest_phone": "Please provide the client's phone number."
+        }
     },
 
     "date_filter": {
@@ -784,7 +833,19 @@
         "in_stock": "{count} in stock",
         "edit": "Edit",
         "remove": "Remove",
-        "confirm_remove": "Are you sure you want to remove this product?"
+        "confirm_remove": "Are you sure you want to remove this product?",
+        "view_active": "View active",
+        "archived": "Archived",
+        "no_products_found": "No products found",
+        "adjust_filters": "Try adjusting the filters or search",
+        "no_archived_products": "No archived products",
+        "no_archived_products_hint": "Archived products will appear here",
+        "no_products": "There are no products yet",
+        "no_products_hint": "Click \"Add Product\" to get started",
+        "confirm_archive": "Are you sure you want to archive this product?",
+        "confirm_restore": "Are you sure you want to restore this product?",
+        "confirm_permanent": "Are you sure you want to permanently delete this product? This action cannot be undone.",
+        "error_generic": "An error occurred. Please try again."
     },
 
     "order_details": {
@@ -825,7 +886,10 @@
         "error_update_status": "Error updating status.",
         "error_cancel": "Error cancelling order.",
         "error_save_notes": "Error saving notes.",
-        "pickup_toast": "Pickup deadline: {date}"
+        "pickup_toast": "Pickup deadline: {date}",
+        "payment_reference_label": "Payment Reference:",
+        "register_payment": "Register Payment",
+        "finalize_order": "Finalize Order"
     },
 
     "pos_payment": {
@@ -869,7 +933,9 @@
         "error_payment": "Failed to process payment.",
         "confirm_cash": "Confirm that you received the cash payment and it is correct?",
         "confirm_mbway": "Do you confirm you have received the payment via MBWay and it is correct?",
-        "confirm_reference": "Confirm that you received the payment for reference \"{reference}\" and it is correct?"
+        "confirm_reference": "Confirm that you received the payment for reference \"{reference}\" and it is correct?",
+        "mbway_send_to": "Send MBWay to:",
+        "mbway_number_unavailable": "Number not available"
     },
 
     "coordinator_management": {

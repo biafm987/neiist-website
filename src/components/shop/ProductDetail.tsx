@@ -30,17 +30,7 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
   const normalize = (val?: string) => (val ? val.replace(/['"\\]/g, "").trim() : "");
 
   const optionNames = useMemo(() => {
-    const seen = new Set<string>();
-    const result: string[] = [];
-    product.variants.forEach((v) => {
-      Object.keys(v.options || {}).forEach((k) => {
-        if (!seen.has(k)) {
-          seen.add(k);
-          result.push(k);
-        }
-      });
-    });
-    return result;
+    return Array.from(new Set(product.variants.flatMap((v) => Object.keys(v.options || {}))));
   }, [product.variants]);
 
   const [selected, setSelected] = useState<Record<string, string>>(() => {
@@ -99,17 +89,8 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
   }, [product.variants, optionNames, selected]);
 
   const allImages = useMemo(() => {
-    const result: string[] = [...product.images];
-    const inResult = new Set(result);
-    product.variants.forEach((v) => {
-      (v.images ?? []).forEach((img) => {
-        if (!inResult.has(img)) {
-          result.push(img);
-          inResult.add(img);
-        }
-      });
-    });
-    return result;
+    const imgs = [...(product.images || []), ...product.variants.flatMap((v) => v.images || [])];
+    return Array.from(new Set(imgs));
   }, [product]);
 
   const getVariantImageIndex = useCallback(
@@ -166,8 +147,8 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
     if (!canBuy) {
       toast.error(
         isDeadlineExpired
-          ? "O prazo de encomenda deste produto já terminou."
-          : "Este produto já não está disponível para compra.",
+          ? (dict?.error_deadline ?? "O prazo de encomenda deste produto já terminou.")
+          : (dict?.error_unavailable ?? "Este produto já não está disponível para compra."),
         { id: unavailableToastId, duration: Infinity }
       );
       return;
@@ -213,7 +194,7 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
           ) : (
             <div className={`${styles.mainImage} ${styles.noImage}`}>
               <FiImage size={64} />
-              <span>Sem Imagem</span>
+              <span>{dict?.no_image_label}</span>
             </div>
           )}
           {allImages.length > 1 && (
@@ -333,11 +314,11 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
             <div className={styles.asideDetails}>
               <details className={styles.detailsBlock}>
                 <summary>
-                  <span>Guia de Tamanhos</span>
+                  <span>{dict?.size_guide_title ?? "Size Guide"}</span>
                   <FiChevronDown className={styles.detailIcon} aria-hidden />
                 </summary>
                 <p>
-                  Vê o nosso{" "}
+                  {(dict?.size_guide_text ?? "Check our {link} for more details.").split("{link}")[0]}
                   <a
                     href="#"
                     className={styles.sizeGuideLink}
@@ -345,20 +326,19 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
                       e.preventDefault();
                       setShowSizeGuide(true);
                     }}>
-                    Guia de Tamanhos
-                  </a>{" "}
-                  para mais detalhes.
+                    {dict?.size_guide_link ?? "Guia de Tamanhos"}
+                  </a>
+                  {(dict?.size_guide_text ?? "Check our {link} for more details.").split("{link}")[1]}
                 </p>
               </details>
               <SizeGuideOverlay open={showSizeGuide} onClose={() => setShowSizeGuide(false)} />
               <details className={styles.detailsBlock}>
                 <summary>
-                  <span>Prazos de Entrega</span>
+                  <span>{dict?.delivery_title ?? "Prazos de Entrega"}</span>
                   <FiChevronDown className={styles.detailIcon} aria-hidden />
                 </summary>
                 <p>
-                  Encomenda até 25 de Dezembro para receberes entre 20 e 25 de Janeiro. Pedidos após
-                  esta data terão um tempo de espera superior.
+                  {dict?.delivery_text ?? "Encomenda até 25 de Dezembro para receberes entre 20 e 25 de Janeiro. Pedidos após esta data terão um tempo de espera superior."}
                 </p>
               </details>
             </div>

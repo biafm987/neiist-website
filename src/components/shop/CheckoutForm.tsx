@@ -10,10 +10,12 @@ import { getPaymentLabel, PaymentMethod } from "@/types/shop/payment";
 import { CartItem } from "@/types/shop/product";
 import { getOrderKindRules, getOrderKindFromItems } from "@/utils/shop/orderKindUtils";
 import Image from "next/image";
-import { getColorFromOptions, isColorKey } from "@/utils/shop/shopUtils";
+import { getColorFromOptions } from "@/utils/shop/shopUtils";
 import { FaChevronDown } from "react-icons/fa";
 import { User } from "@/types/user";
 import type { ApplePayPaymentRequest, ApplePayPaymentToken } from "@/types/sumup";
+import VariantTags from "@/components/shop/VariantTags";
+import type { CheckoutFormDict } from "@/types/i18n";
 
 interface CheckoutFormProps {
   user: User;
@@ -137,7 +139,6 @@ export default function CheckoutForm({ user, dict }: CheckoutFormProps) {
     try {
       await createOrder(selectedPayment, true);
     } catch (err) {
-      // TODO: (ERROR)
       setError(err instanceof Error ? err.message : dict.error_submit);
     } finally {
       setLoading(false);
@@ -146,19 +147,16 @@ export default function CheckoutForm({ user, dict }: CheckoutFormProps) {
 
   const handleApplePayDirect = () => {
     if (!campus) {
-      // TODO: (ERROR)
       setError(dict.error_no_campus);
       return;
     }
 
     if (typeof window === "undefined" || !window.isSecureContext) {
-      // TODO: (ERROR)
       setError(dict.error_apple_pay_context);
       return;
     }
 
     if (typeof window.ApplePaySession === "undefined") {
-      // TODO: (ERROR)
       setError(dict.error_apple_pay_unavailable);
       return;
     }
@@ -257,7 +255,6 @@ export default function CheckoutForm({ user, dict }: CheckoutFormProps) {
           router.push(`/my-orders?orderId=${createdOrderId}`);
         } else {
           session.completePayment(ApplePaySession.STATUS_FAILURE);
-          // TODO: (ERROR)
           setError(data?.error || dict.error_apple_pay_failed);
         }
       } catch (error) {
@@ -297,7 +294,7 @@ export default function CheckoutForm({ user, dict }: CheckoutFormProps) {
   ] as const;
 
   const paymentOptions = allowedPaymentMethods.map((method) => {
-    let label = getPaymentLabel(method);
+    let label : string = getPaymentLabel(method);
     if (method === "sumup") label = dict.payment_card;
     if (method === "in-person") label = dict.payment_in_person;
 
@@ -439,10 +436,7 @@ export default function CheckoutForm({ user, dict }: CheckoutFormProps) {
                   ? item.product.variants.find((v) => v.id === item.variantId)
                   : null;
 
-              const imageSrc =
-                variantObj && Array.isArray(variantObj.images) && variantObj.images.length > 0
-                  ? variantObj.images[0]
-                  : item.product.images?.[0];
+              const imageSrc = variantObj?.images?.[0] ?? item.product.images?.[0];
               const colorInfo = getColorFromOptions(
                 variantObj?.options ?? undefined,
                 variantObj?.label ?? undefined
@@ -479,16 +473,7 @@ export default function CheckoutForm({ user, dict }: CheckoutFormProps) {
                           title={colorInfo.name || colorInfo.hex}
                         />
                       )}
-                      {variantObj?.options &&
-                        (() => {
-                          const entries = Object.entries(variantObj.options);
-                          const nonColorEntries = entries.filter(([k]) => !isColorKey(k));
-                          return nonColorEntries.map(([k, v]) => (
-                            <span className={styles.variantSize} key={k}>
-                              {`${k.trim()}: ${v}`}
-                            </span>
-                          ));
-                        })()}
+                      <VariantTags options={variantObj?.options} className={styles.variantSize} />
                     </div>
                   </div>
                 </div>

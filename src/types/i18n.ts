@@ -12,6 +12,20 @@ export interface ShopManagementDict {
   edit: string;
   remove: string;
   confirm_remove: string;
+  view_active: string;
+  archived: string;
+  no_products_found: string;
+  adjust_filters: string;
+  no_archived_products: string;
+  no_archived_products_hint: string;
+  no_products: string;
+  no_products_hint: string;
+  confirm_archive: string;
+  confirm_restore: string;
+  confirm_permanent: string;
+  error_generic: string;
+  confirm_dialog: ConfirmDialogDict;
+  categories: Record<string, string>;
 }
 
 export interface ConfirmDialogDict {
@@ -59,6 +73,12 @@ export interface ProductFormDict {
   error: string;
   default_option_color: string;
   default_option_size: string;
+  stock_type_label: string;
+  stock: string;
+  add_button: string;
+  groups_tab: string;
+  combos_tab: string;
+  show_secundary_groups: string;
 }
 export interface JoinsUsDict {
     title: string; 
@@ -102,6 +122,7 @@ export interface NavBarDict {
     about_us: string;
     activities: string;
     shop: string;
+    dinner: string;
     layout_navbar: {
       button: string;
       theme_toggle_light: string;
@@ -119,6 +140,24 @@ export interface NavBarDict {
       logout: string;
       user_photo_alt: string;
     };
+  }
+
+export interface DinnerDict {
+    not_found: string;
+    signed_up_message: string;
+    unlock_time_message: string;
+    unlock_highlight: string;
+    unlocked_message: string;
+    description: string;
+    buy_button: string;
+    poster_alt: string;
+    location_label: string;
+    date_label: string;
+    date_value: string;
+    time_label: string;
+    time_value: string;
+    location_value: string;
+    location_url: string;
   }
 
 export interface ThemeToggleDict {
@@ -422,6 +461,9 @@ export interface OrderDetailsOverlayDict {
       error_cancel: string;
       error_save_notes: string;
       pickup_toast: string;
+      payment_reference_label: string;
+      register_payment: string;
+      finalize_order: string;
     };
     confirm_dialog: { confirm: string; cancel: string };
     new_order_modal: Record<string, unknown>;
@@ -462,6 +504,22 @@ export interface NewOrderModalDict {
       error_no_user: string;
       error_create: string;
       error_update: string;
+      guest_confirm: string;
+      guest_title: string;
+      guest_name_label: string;
+      guest_name_placeholder: string;
+      guest_email_label: string;
+      guest_email_placeholder: string;
+      guest_phone_label: string;
+      guest_phone_placeholder: string;
+      errors: {
+        no_products: string;
+        no_campus: string;
+        mixed_invalid: string;
+        guest_name: string;
+        guest_email: string;
+        guest_phone: string;
+      };
     };
     create_user_modal: {
       title: string;
@@ -636,6 +694,22 @@ export interface OrdersTableDict {
       error_no_user: string;
       error_create: string;
       error_update: string;
+      guest_confirm: string;
+      guest_title: string;
+      guest_name_label: string;
+      guest_name_placeholder: string;
+      guest_email_label: string;
+      guest_email_placeholder: string;
+      guest_phone_label: string;
+      guest_phone_placeholder: string;
+      errors: {
+        no_products: string;
+        no_campus: string;
+        mixed_invalid: string;
+        guest_name: string;
+        guest_email: string;
+        guest_phone: string;
+      };
     };
     create_user_modal: {
       title: string;
@@ -776,4 +850,8 @@ export interface CheckoutFormDict {
   payment_confirmed: string;
   error_payment: string;
   confirm_cash: string;
+  confirm_mbway: string;
+  confirm_reference: string;
+  mbway_send_to: string;
+  mbway_number_unavailable: string;
 }

@@ -20,13 +20,14 @@ interface NavBarProps {
   dict: NavBarDict;
   currentLocale: Locale;
 }
+/*
 const navLinks = [
   { name: "Sobre Nós", href: "/about-us" },
   { name: "Atividades", href: "/activities" },
-  /*{ name: "Blog", href: "/blog" },*/
+  { name: "Blog", href: "/blog" },
   { name: "Loja", href: "/shop" },
   { name: "Jantar de Curso", href: "/dinner" },
-];
+]; */
 
 export default function NavBar({ dict, currentLocale }: NavBarProps) {
   const router = useRouter();
@@ -39,6 +40,7 @@ export default function NavBar({ dict, currentLocale }: NavBarProps) {
     { name: dict.about_us, href: "/about-us" },
     { name: dict.activities, href: "/activities" },
     { name: dict.shop, href: "/shop" },
+    { name: dict.dinner, href: "/dinner" },
   ];
 
   useEffect(() => {
@@ -90,7 +92,7 @@ export default function NavBar({ dict, currentLocale }: NavBarProps) {
   const renderNavItems = (onClick?: (_href: string) => void) => {
     return navLinks.map((link) => (
       <NavItem
-        key={link.name}
+        key={link.href}
         href={link.href}
         label={link.name}
         onClick={onClick ? () => onClick(link.href) : undefined}

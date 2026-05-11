@@ -66,6 +66,7 @@ export default function MobileFiltersDrawer({
   availableCampuses,
   availableStatuses,
   getStatusLabel,
+  dict,
 }: MobileFiltersDrawerProps) {
   const [filters, setFilters] = useState<FilterState>(initialFilters);
   const [dateMode, setDateMode] = useState<"until" | "range">("until");
@@ -153,19 +154,19 @@ export default function MobileFiltersDrawer({
       <div className={styles.overlay} onClick={onClose} />
       <div className={styles.drawer}>
         <div className={styles.header}>
-          <h2 className={styles.title}>Filtros</h2>
+          <h2 className={styles.title}>{dict.title}</h2>
           <button
             type="button"
             className={styles.closeBtn}
             onClick={onClose}
-            aria-label="Close filters">
+            aria-label={dict.close_label}>
             <FiX size={24} />
           </button>
         </div>
 
         <div className={styles.content}>
           <FilterSection
-            title="Data"
+            title={dict.date_section}
             expanded={expandedSection === "date"}
             onToggle={() => toggleSection("date")}>
             <div className={styles.dateTabs}>
@@ -173,13 +174,13 @@ export default function MobileFiltersDrawer({
                 type="button"
                 className={dateMode === "until" ? styles.tabActive : styles.tab}
                 onClick={() => setDateMode("until")}>
-                Até data
+                {dict.until}
               </button>
               <button
                 type="button"
                 className={dateMode === "range" ? styles.tabActive : styles.tab}
                 onClick={() => setDateMode("range")}>
-                Intervalo
+                {dict.range}
               </button>
             </div>
 
@@ -233,7 +234,7 @@ export default function MobileFiltersDrawer({
           </FilterSection>
 
           <FilterSection
-            title="Produtos"
+            title={dict.products_section}
             badge={filters.products.length}
             expanded={expandedSection === "products"}
             onToggle={() => toggleSection("products")}>
@@ -250,7 +251,7 @@ export default function MobileFiltersDrawer({
           </FilterSection>
 
           <FilterSection
-            title="Campus"
+            title={dict.campus_section}
             badge={filters.campuses.length}
             expanded={expandedSection === "campus"}
             onToggle={() => toggleSection("campus")}>
@@ -267,7 +268,7 @@ export default function MobileFiltersDrawer({
           </FilterSection>
 
           <FilterSection
-            title="Estado"
+            title={dict.status_section}
             badge={filters.statuses.length}
             expanded={expandedSection === "status"}
             onToggle={() => toggleSection("status")}>
@@ -286,10 +287,10 @@ export default function MobileFiltersDrawer({
 
         <div className={styles.footer}>
           <button type="button" className={styles.clearBtn} onClick={handleClearAll}>
-            Limpar Tudo
+            {dict.clear_all}
           </button>
           <button type="button" className={styles.applyBtn} onClick={handleApply}>
-            Aplicar {activeFiltersCount > 0 && `(${activeFiltersCount})`}
+            {dict.apply} {activeFiltersCount > 0 && `(${activeFiltersCount})`}
           </button>
         </div>
       </div>
