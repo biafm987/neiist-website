@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
-export default function VotingSync() {
+export default function AdminVotingSync() {
   const router = useRouter();
   const lastUpdatedAtRef = useRef<string | null>(null);
 
@@ -32,8 +32,8 @@ export default function VotingSync() {
       router.refresh();
     };
 
-    source.onerror = (err) => {
-      console.error("VotingSync SSE Error:", err);
+    source.onerror = (error) => {
+      console.error("VotingSync SSE Error:", error);
     };
 
     return () => {

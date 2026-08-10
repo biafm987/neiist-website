@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { Readable } from "stream";
-import { getUserFromJWT } from "@/utils/authUtils";
-import { getDriveClient } from "@/utils/googleDrive";
+import { getUserFromJWT } from "@/lib/auth";
+import { getDriveClient } from "@/lib/google/drive";
 
 const FOLDER_ID = process.env.GDRIVE_CV_FOLDER_ID!;
 if (!FOLDER_ID) throw new Error("Missing env: GDRIVE_CV_FOLDER_ID");

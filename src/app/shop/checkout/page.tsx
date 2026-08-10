@@ -1,9 +1,9 @@
 import CheckoutForm from "@/components/shop/CheckoutForm";
-import { getUserFromJWT } from "@/utils/authUtils";
-import { getUser } from "@/utils/dbUtils";
+import { getUserFromJWT } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getDictionary, getLocale } from "@/lib/i18n";
+import { getUser } from "@/utils/db/userQueries";
 
 export default async function CheckoutPage() {
   const cookieStore = await cookies();
@@ -12,7 +12,7 @@ export default async function CheckoutPage() {
   const locale = await getLocale();
   const dict = await getDictionary(locale);
 
-  const user = await getUser(jwtUser.istid);
+  const user = await getUser(jwtUser.istid).catch(() => null);
   if (!user) {
     redirect("/login?redirect=/shop/checkout");
   }

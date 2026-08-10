@@ -1,10 +1,10 @@
 import OrdersTable from "@/components/shop/OrdersTable";
 import OrderDetailOverlay from "@/components/shop/OrderDetailsOverlay";
-import { getAllOrders, getAllProducts } from "@/utils/dbUtils";
-import { serverCheckRoles } from "@/utils/permissionUtils";
 import { UserRole } from "@/types/user";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import { OrderDetailsOverlayDict, OrdersTableDict } from "@/types/i18n";
+import { getAllOrders, getAllProducts } from "@/utils/db/shopQueries";
+import { serverCheckRoles } from "@/lib/auth";
 
 interface PageProps {
   searchParams: Promise<{ orderId?: string }>;

@@ -13,12 +13,12 @@ import {
 import Countdown from "@/components/dinner/Countdown";
 import InfoListItem from "@/components/dinner/InfoListItem";
 import UnlockedDinnerPage from "@/components/dinner/UnlockedDinnerPage";
-import { getAllProducts, getUserOrderedProductsInCategory } from "@/utils/dbUtils";
-import { serverCheckRoles } from "@/utils/permissionUtils";
 import { isJantarDeCursoCategory } from "@/utils/shop/orderKindUtils";
 import penguinImg from "@/assets/events/DinnerPenguin.png";
 import styles from "@/styles/pages/DinnerPage.module.css";
 import { getLocale, getDictionary } from "@/lib/i18n";
+import { getAllProducts, getUserOrderedProductsInCategory } from "@/utils/db/shopQueries";
+import { serverCheckRoles } from "@/lib/auth";
 
 const handelsonTwo = localFont({
   src: "../../assets/fonts/handelson-two.otf",

@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { UserRole } from "@/types/user";
-import {
-  createDiscountCode,
-  deleteDiscountCode,
-  getAllDiscountCodes,
-  updateDiscountCode,
-} from "@/utils/dbUtils";
-import { serverCheckRoles } from "@/utils/permissionUtils";
-import { sendEmail, getDiscountCampaignEmailTemplate } from "@/utils/emailUtils";
+import { sendEmail, getDiscountCampaignEmailTemplate } from "@/lib/email";
 import type {
   DiscountCodeInput,
   DiscountCodeUpdateInput,
   DiscountBulkGenerateInput,
 } from "@/types/shop/discountCode";
+import { handleApiError } from "@/utils/apiErrorUtils";
+import {
+  createDiscountCode,
+  deleteDiscountCode,
+  getAllDiscountCodes,
+  updateDiscountCode,
+} from "@/utils/db/shopQueries";
+import { serverCheckRoles } from "@/lib/auth";
 
 function normalizeString(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -204,8 +205,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("discounts POST error:", error);
-    return NextResponse.json({ error: "Failed to generate discount codes" }, { status: 500 });
+    return handleApiError(error);
   }
 }
 
@@ -269,8 +269,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json(updated);
   } catch (error) {
-    console.error("discounts PUT error:", error);
-    return NextResponse.json({ error: "Failed to update discount code" }, { status: 500 });
+    return handleApiError(error);
   }
 }
 
@@ -293,7 +292,6 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("discounts DELETE error:", error);
-    return NextResponse.json({ error: "Failed to delete discount code" }, { status: 500 });
+    return handleApiError(error);
   }
 }

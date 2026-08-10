@@ -11,6 +11,9 @@ import "@/styles/globals.css";
 import "@/styles/components/activities/ReactBigCalendar.css";
 import { Metadata } from "next";
 import "@/lib/autoCancelScheduler";
+import { cookies } from "next/headers";
+import { getUserFromJWT } from "@/lib/auth";
+import { getUser } from "@/utils/db/userQueries";
 
 const secularOne = Secular_One({
   subsets: ["latin"],
@@ -26,13 +29,10 @@ export const metadata: Metadata = {
 
 async function getInitialUser() {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/userdata`, {
-      cache: "no-store",
-      credentials: "include",
-      headers: { cookie: "" },
-    });
-    if (!res.ok) return null;
-    return await res.json();
+    const sessionToken = (await cookies()).get("session")?.value;
+    const jwtUser = getUserFromJWT(sessionToken);
+    if (!jwtUser?.istid) return null;
+    return await getUser(jwtUser.istid);
   } catch {
     return null;
   }

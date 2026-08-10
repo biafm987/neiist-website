@@ -1,33 +1,21 @@
 import { google } from "googleapis";
 import type { NotionEvent } from "@/types/events";
 import { getFirstAndLastName } from "@/utils/userUtils";
-import fs from "fs";
-import path from "path";
+import { getServiceAccount } from "@/lib/google/serviceAccount";
 
 const SCOPES = ["https://www.googleapis.com/auth/calendar"];
 const BATCH_SIZE = 50;
 const BATCH_DELAY_MS = 10;
 
-function getServiceAccountCredentials() {
-  const keyEnv = process.env.GOOGLE_SERVICE_ACCOUNT_KEY!;
-
-  if (keyEnv.endsWith(".json")) {
-    const keyPath = path.resolve(process.cwd(), keyEnv);
-    const keyContent = fs.readFileSync(keyPath, "utf8");
-    return JSON.parse(keyContent);
-  }
-  return JSON.parse(keyEnv);
-}
+let _calendarClient: ReturnType<typeof google.calendar> | null = null;
 
 export function getCalendarClient() {
-  const serviceAccountKey = getServiceAccountCredentials();
-
-  const auth = new google.auth.GoogleAuth({
-    credentials: serviceAccountKey,
-    scopes: SCOPES,
-  });
-
-  return google.calendar({ version: "v3", auth });
+  if (!_calendarClient) {
+    const serviceAccountKey = getServiceAccount("GOOGLE_SERVICE_ACCOUNT_KEY");
+    const auth = new google.auth.GoogleAuth({ credentials: serviceAccountKey, scopes: SCOPES });
+    _calendarClient = google.calendar({ version: "v3", auth });
+  }
+  return _calendarClient;
 }
 
 function isDateOnly(s?: string | null) {

@@ -1,7 +1,7 @@
-import { getAllDepartments, getAllMemberships, getAllUsers } from "@/utils/dbUtils";
 import AboutUsEditor from "@/components/admin/AboutUsEditor";
 import { Membership } from "@/types/memberships";
-import { getLocale, getDictionary} from "@/lib/i18n";
+import { getLocale, getDictionary } from "@/lib/i18n";
+import { getAllDepartments, getAllMemberships, getAllUsers } from "@/utils/db/userQueries";
 
 export default async function AboutUsManager({
   searchParams,

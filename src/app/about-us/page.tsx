@@ -1,10 +1,3 @@
-import {
-  getAllMemberships,
-  getAllTeams,
-  getAllAdminBodies,
-  getDepartmentRoleOrder,
-  getAllUsers,
-} from "@/utils/dbUtils";
 import { getFirstAndLastName } from "@/utils/userUtils";
 import teamImage from "@/assets/team.png";
 import styles from "@/styles/pages/AboutUs.module.css";
@@ -15,7 +8,13 @@ import { Membership, Team } from "@/types/memberships";
 import { User } from "@/types/user";
 import { getLocale, getDictionary, t } from "@/lib/i18n";
 import { AboutUsPageDict } from "@/types/i18n";
-
+import {
+  getAllMemberships,
+  getAllTeams,
+  getAllAdminBodies,
+  getDepartmentRoleOrder,
+  getAllUsers,
+} from "@/utils/db/userQueries";
 
 type Department = {
   name: string;

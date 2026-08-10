@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { serverCheckRoles } from "@/utils/permissionUtils";
 import { UserRole } from "@/types/user";
 import {
   validateSumUpCredentials,
@@ -7,7 +6,8 @@ import {
   getErrorStatus,
   sumupErrorResponse,
   formatSumUpError,
-} from "@/utils/sumupUtils";
+} from "@/lib/sumup";
+import { serverCheckRoles } from "@/lib/auth";
 
 const SUMUP_MERCHANT_CODE = process.env.SUMUP_MERCHANT_CODE;
 

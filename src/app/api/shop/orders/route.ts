@@ -1,21 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  getAllOrders,
-  newOrder,
-  getUser,
-  updateUser,
-  mapOrderDbErrorToResponse,
-  getProduct,
-  getUserOrderedProductsInCategory,
-} from "@/utils/dbUtils";
 import { UserRole } from "@/types/user";
 import { PAYMENT_METHODS, PENDING_PAYMENT_METHODS, PaymentMethod } from "@/types/shop/payment";
 import { OrderSource } from "@/types/shop/orderKind";
 import { getOrderKindRules, getOrderKindFromItems } from "@/utils/shop/orderKindUtils";
 import { OrderItem } from "@/types/shop/order";
 import { Product } from "@/types/shop/product";
-import { serverCheckRoles } from "@/utils/permissionUtils";
-import { sendEmail, getPendingOrderEmailTemplate } from "@/utils/emailUtils";
+import { sendEmail, getPendingOrderEmailTemplate } from "@/lib/email";
+import { handleApiError } from "@/utils/apiErrorUtils";
+import {
+  getAllOrders,
+  newOrder,
+  getProduct,
+  getUserOrderedProductsInCategory,
+} from "@/utils/db/shopQueries";
+import { getUser, updateUser } from "@/utils/db/userQueries";
+import { serverCheckRoles } from "@/lib/auth";
 
 function parseOrderSource(value: string): OrderSource {
   switch (value) {
@@ -40,8 +39,8 @@ export async function GET() {
   try {
     const orders = await getAllOrders();
     return NextResponse.json(orders);
-  } catch {
-    return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error);
   }
 }
 
@@ -157,15 +156,14 @@ export async function POST(request: NextRequest) {
     const customerPhone = typeof body.customer_phone === "string" ? body.customer_phone.trim() : "";
 
     if (guestCheckout && userAssignmentRequired) {
-      if (!customerName) {
+      if (!customerName)
         return NextResponse.json({ error: "Nome do cliente obrigatorio" }, { status: 400 });
-      }
-      if (!customerEmail) {
+
+      if (!customerEmail)
         return NextResponse.json({ error: "Email do cliente obrigatorio" }, { status: 400 });
-      }
-      if (!customerPhone) {
+
+      if (!customerPhone)
         return NextResponse.json({ error: "Telemóvel do cliente obrigatorio" }, { status: 400 });
-      }
     }
 
     const stockOverride =
@@ -218,17 +216,12 @@ export async function POST(request: NextRequest) {
           ),
         });
       } catch (emailErr) {
-        console.warn("Failed to send order confirmation email:", emailErr);
+        return handleApiError(emailErr);
       }
     }
 
     return NextResponse.json(order);
   } catch (error) {
-    const mappedError = mapOrderDbErrorToResponse(error);
-    if (mappedError)
-      return NextResponse.json({ error: mappedError.error }, { status: mappedError.status });
-
-    console.error("orders POST error:", error);
-    return NextResponse.json({ error: "Failed to create order" }, { status: 500 });
+    return handleApiError(error);
   }
 }

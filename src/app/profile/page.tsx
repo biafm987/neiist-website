@@ -1,20 +1,20 @@
 import { cookies } from "next/headers";
 import ProfileClient from "@/components/Profile";
 import styles from "@/styles/pages/ProfilePage.module.css";
-import { getUserFromJWT } from "@/utils/authUtils";
-import { getUser } from "@/utils/dbUtils";
-import { NextResponse } from "next/server";
+import { getUserFromJWT } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import { ProfileDict } from "@/types/i18n";
+import { getUser } from "@/utils/db/userQueries";
 
 export default async function ProfilePage() {
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get("session")?.value;
   const jwtUser = getUserFromJWT(sessionToken)!;
 
-  const user = await getUser(jwtUser.istid);
+  const user = await getUser(jwtUser.istid).catch(() => null);
   if (!user) {
-    return NextResponse.redirect("/login");
+    redirect("/login");
   }
 
   let hasCV = false;
@@ -32,10 +32,7 @@ export default async function ProfilePage() {
 
   return (
     <div className={styles.container}>
-      <ProfileClient 
-          initialUser={user} 
-          initialHasCV={hasCV} 
-          dict={fullDict.profile as ProfileDict} />
+      <ProfileClient initialUser={user} initialHasCV={hasCV} dict={fullDict.profile as ProfileDict} />
     </div>
   );
 }

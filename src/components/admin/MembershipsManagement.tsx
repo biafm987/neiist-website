@@ -1,9 +1,9 @@
-import { getAllMemberships, getAllUsers, getAllDepartments } from "@/utils/dbUtils";
 import MembershipsSearchList from "./MembershipsSearchList";
 import styles from "@/styles/components/admin/MembershipsManagement.module.css";
 import { Membership } from "@/types/memberships";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import { MembershipsSearchListDict } from "@/types/i18n";
+import { getAllMemberships, getAllUsers, getAllDepartments } from "@/utils/db/userQueries";
 
 export default async function MembershipsManagement() {
   const locale = await getLocale();

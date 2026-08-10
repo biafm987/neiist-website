@@ -1,8 +1,9 @@
-import { getAllAdminBodies } from "@/utils/dbUtils";
 import AdminBodiesSearchFilter from "@/components/admin/AdminBodiesSearchFilter";
 import AddDepartmentModal from "@/components/admin/AddDepartmentModal";
 import styles from "@/styles/components/admin/AdminBodiesManagement.module.css";
 import { getLocale, getDictionary } from "@/lib/i18n";
+import { getLocale, getDictionary } from "@/lib/i18n";
+import { getAllAdminBodies } from "@/utils/db/userQueries";
 
 export default async function AdminBodiesManagement() {
   const locale = await getLocale();

@@ -1,7 +1,7 @@
 import ShopManagement from "@/components/shop/ShopManagement";
-import { getAllProductsAdmin, getAllCategories } from "@/utils/dbUtils";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import { ShopManagementDict } from "@/types/i18n";
+import { getAllProductsAdmin, getAllCategories } from "@/utils/db/shopQueries";
 
 export default async function ShopManagePage() {
   const [products, categories] = await Promise.all([getAllProductsAdmin(), getAllCategories(true)]);

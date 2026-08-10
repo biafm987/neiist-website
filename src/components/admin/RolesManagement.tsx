@@ -1,15 +1,14 @@
-import { getAllDepartments, getDepartmentRoles } from "@/utils/dbUtils";
 import RolesSearchFilter from "@/components/admin/RolesSearchFilter";
 import styles from "@/styles/components/admin/RolesManagement.module.css";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import { RolesSearchFilterDict } from "@/types/i18n";
+import { getAllDepartments, getDepartmentRoles } from "@/utils/db/userQueries";
 
 export default async function RolesManagement({
   initialDepartmentType,
 }: {
   initialDepartmentType: string;
 }) {
-
   const locale = await getLocale();
   const dict = await getDictionary(locale);
 

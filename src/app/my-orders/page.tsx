@@ -1,9 +1,9 @@
 import MyOrdersList from "@/components/shop/MyOrdersList";
 import OrderDetailOverlay from "@/components/shop/OrderDetailsOverlay";
-import { getUserFromJWT } from "@/utils/authUtils";
-import { getAllOrders, getAllProducts } from "@/utils/dbUtils";
+import { getUserFromJWT } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { getLocale, getDictionary } from "@/lib/i18n";
+import { getAllOrders, getAllProducts } from "@/utils/db/shopQueries";
 
 interface PageProps {
   searchParams: Promise<{ orderId?: string }>;

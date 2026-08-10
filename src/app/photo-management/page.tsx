@@ -1,9 +1,9 @@
-import { getAllMemberships } from "@/utils/dbUtils";
 import { Membership } from "@/types/memberships";
 import PhotoTeamMembers from "@/components/photo-management/PhotoTeamMembers";
 import styles from "@/styles/components/photo-management/PhotoTeamMembers.module.css";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import { PhotoTeamMembersDict } from "@/types/i18n";
+import { getAllMemberships } from "@/utils/db/userQueries";
 
 export default async function PhotoTeamMembersPage() {
   const memberships = await getAllMemberships();
