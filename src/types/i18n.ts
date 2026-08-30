@@ -273,14 +273,58 @@ export interface UserMenuDict {
     user_photo_alt: string;
   }
 
+export interface CalendarDetailsDict {
+  close: string;
+  errors: {
+    save_settings: string;
+    sign_up: string;
+    update_signup: string;
+    fetch_attendees: string;
+    fetch_emails: string;
+  };
+  saving_settings: string;
+  settings_saved: string;
+  cancelling_signup: string;
+  signing_up: string;
+  signed_up: string;
+  signup_cancelled: string;
+  preparing_email: string;
+  email_opened: string;
+  link_copied: string;
+  untitled_event: string;
+  share_title: string;
+  labels: {
+    description: string;
+    allow_signups: string;
+    signup_deadline: string;
+    max_attendees: string;
+    subscribers: string;
+  };
+  placeholders: {
+    description: string;
+    no_limit: string;
+  };
+  processing: string;
+  please_login: string;
+  buttons: {
+    cancel_signup: string;
+    sign_up: string;
+    email_attendees: string;
+  };
+  icon_picker: {
+    title: string;
+    search_placeholder: string;
+  };
+}
+
 export interface CalendarDict {
-    toolbar:{
+  toolbar: {
     today: string;
     previous_month: string;
     next_month: string;
-    };
-    details: any;
-  }
+  };
+  details: CalendarDetailsDict;
+}
 
 export interface IconPickerDict {
     icon_picker: {
@@ -991,7 +1035,7 @@ export interface ShopDict {
   error_unavailable: string;
   breadcrumbs: { shop: string };
   labels: { quantity: string };
-  buttons: { add_to_cart: string };
+  buttons: { add_to_cart: string; buy_now: string };
   products: Record<string, { title: string; description: string }>;
   product_form: ProductFormDict;
   categories: Record<string, string>;

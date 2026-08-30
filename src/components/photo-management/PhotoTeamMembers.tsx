@@ -20,11 +20,6 @@ interface Membership {
   userPhoto: string;
 }
 
-interface Department {
-  name: string;
-  active: boolean;
-}
-
 interface PhotoTeamMembersProps {
   membersByDepartment: Record<string, Membership[]>;
   dict: PhotoTeamMembersDict;
@@ -40,7 +35,6 @@ export default function PhotoTeamMembers({
   membersByDepartment,
   dict,
 }: PhotoTeamMembersProps) {
-
   const [search, setSearch] = useState("");
   const [editingPhotoIstid, setEditingPhotoIstid] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);

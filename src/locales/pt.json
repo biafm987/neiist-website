@@ -265,7 +265,7 @@
         "error_unavailable": "Este produto já não está disponível para compra.",
         "breadcrumbs": { "shop": "Loja" },
         "labels": { "quantity": "Quantidade" },
-        "buttons": { "add_to_cart": "Adicionar ao Carrinho" },
+        "buttons": { "add_to_cart": "Adicionar ao Carrinho", "buy_now": "Comprar já" },
         "products": {
             "Sweats EIC": {
                 "title": "Sweats EIC",

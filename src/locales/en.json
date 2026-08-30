@@ -265,7 +265,7 @@
         "error_unavailable": "This product is no longer available for purchase.",
         "breadcrumbs": { "shop": "Shop" },
         "labels": { "quantity": "Quantity" },
-        "buttons": { "add_to_cart": "Add to Cart" },
+        "buttons": { "add_to_cart": "Add to Cart", "buy_now": "Buy Now" },
         "products": {
             "Sweats EIC": {
                 "title": "Course Hoodie",

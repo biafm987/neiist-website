@@ -8,7 +8,7 @@ interface YearSelectorProps {
   years: string[];
   selectedYear: string;
   visible?: number;
-  dict: YearSelectorDict
+  dict: YearSelectorDict;
 }
 
 function formatYearDisplay(year: string) {
@@ -21,7 +21,12 @@ function formatYearDisplay(year: string) {
   return { mainYear: year, subYear };
 }
 
-export default function YearSelector({ years, selectedYear, visible = 5, dict }: YearSelectorProps) {
+export default function YearSelector({
+  years,
+  selectedYear,
+  visible = 5,
+  dict,
+}: YearSelectorProps) {
   const total = years.length;
   const v = Math.max(1, Math.min(visible, 5));
   const idx = Math.max(0, years.indexOf(selectedYear));

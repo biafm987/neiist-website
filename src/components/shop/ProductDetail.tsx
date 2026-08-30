@@ -10,10 +10,11 @@ import { getColorFromOptions, isColorKey } from "@/utils/shop/shopUtils";
 import SizeGuideOverlay from "@/components/shop/SizeGuideOverlay";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
+import type { ShopDict } from "@/types/i18n";
 
 interface ProductDetailProps {
   product: Product;
-  dict?: any;
+  dict?: ShopDict;
 }
 
 export default function ProductDetail({ product, dict }: ProductDetailProps) {
@@ -27,10 +28,13 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
     };
   }, [unavailableToastId]);
 
-  const normalize = (val?: string) => (val ? val.replace(/['"\\]/g, "").trim() : "");
+  const normalize = (val?: string) =>
+    val ? val.replace(/['"\\]/g, "").trim() : "";
 
   const optionNames = useMemo(() => {
-    return Array.from(new Set(product.variants.flatMap((v) => Object.keys(v.options || {}))));
+    return Array.from(
+      new Set(product.variants.flatMap((v) => Object.keys(v.options || {}))),
+    );
   }, [product.variants]);
 
   const [selected, setSelected] = useState<Record<string, string>>(() => {
@@ -46,7 +50,10 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
     optionNames.forEach((name, idx) => {
       const priorOptions = optionNames.slice(0, idx);
       const matching = product.variants.filter((v) =>
-        priorOptions.every((prior) => normalize(v.options?.[prior]) === normalize(selected[prior]))
+        priorOptions.every(
+          (prior) =>
+            normalize(v.options?.[prior]) === normalize(selected[prior]),
+        ),
       );
       const seen = new Set<string>();
       const values: string[] = [];
@@ -84,12 +91,17 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
   const selectedVariant = useMemo(() => {
     if (optionNames.length === 0) return undefined;
     return product.variants.find((v) =>
-      optionNames.every((name) => normalize(v.options?.[name]) === normalize(selected[name]))
+      optionNames.every(
+        (name) => normalize(v.options?.[name]) === normalize(selected[name]),
+      ),
     );
   }, [product.variants, optionNames, selected]);
 
   const allImages = useMemo(() => {
-    const imgs = [...(product.images || []), ...product.variants.flatMap((v) => v.images || [])];
+    const imgs = [
+      ...(product.images || []),
+      ...product.variants.flatMap((v) => v.images || []),
+    ];
     return Array.from(new Set(imgs));
   }, [product]);
 
@@ -99,10 +111,12 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
       const idx = allImages.indexOf(variant.images[0]);
       return idx >= 0 ? idx : 0;
     },
-    [allImages, product]
+    [allImages, product],
   );
 
-  const [imgIndex, setImgIndex] = useState(() => getVariantImageIndex(product.variants[0]));
+  const [imgIndex, setImgIndex] = useState(() =>
+    getVariantImageIndex(product.variants[0]),
+  );
 
   useEffect(() => {
     setImgIndex(getVariantImageIndex(selectedVariant));
@@ -119,14 +133,17 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
 
   const isVariantAvailable = useCallback(
     (v: (typeof product.variants)[0]) =>
-      v.active && (product.stock_type !== "limited" || (v.stock_quantity ?? 0) > 0),
-    [product]
+      v.active &&
+      (product.stock_type !== "limited" || (v.stock_quantity ?? 0) > 0),
+    [product],
   );
 
   const canBuy = useMemo(() => {
     if (isDeadlineExpired) return false;
     if (product.variants.length === 0)
-      return product.stock_type !== "limited" || (product.stock_quantity ?? 0) > 0;
+      return (
+        product.stock_type !== "limited" || (product.stock_quantity ?? 0) > 0
+      );
     return !!selectedVariant && isVariantAvailable(selectedVariant);
   }, [isDeadlineExpired, product, selectedVariant, isVariantAvailable]);
 
@@ -147,9 +164,11 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
     if (!canBuy) {
       toast.error(
         isDeadlineExpired
-          ? (dict?.error_deadline ?? "O prazo de encomenda deste produto já terminou.")
-          : (dict?.error_unavailable ?? "Este produto já não está disponível para compra."),
-        { id: unavailableToastId, duration: Infinity }
+          ? (dict?.error_deadline ??
+              "O prazo de encomenda deste produto já terminou.")
+          : (dict?.error_unavailable ??
+              "Este produto já não está disponível para compra."),
+        { id: unavailableToastId, duration: Infinity },
       );
       return;
     }
@@ -157,7 +176,9 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
     if (isJantarDeCurso) {
       localStorage.setItem(
         "cart",
-        JSON.stringify([{ product, variantId: selectedVariant?.id, quantity: 1 }])
+        JSON.stringify([
+          { product, variantId: selectedVariant?.id, quantity: 1 },
+        ]),
       );
       window.dispatchEvent(new Event("cartUpdated"));
       router.push("/shop/checkout");
@@ -173,11 +194,16 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
   return (
     <div className={styles.container}>
       <div className={styles.breadcrumbs}>
-        <span onClick={() => router.push("/shop")} className={styles.breadcrumbLink}>
+        <span
+          onClick={() => router.push("/shop")}
+          className={styles.breadcrumbLink}
+        >
           {dict?.breadcrumbs?.shop}
         </span>
         <span className={styles.breadcrumbSeparator}>››</span>
-        <span className={styles.breadcrumbCurrent}>{dict?.products?.[product.name]?.title ?? product.name}</span>
+        <span className={styles.breadcrumbCurrent}>
+          {dict?.products?.[product.name]?.title ?? product.name}
+        </span>
       </div>
 
       <div className={styles.grid}>
@@ -204,7 +230,8 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
                   key={i}
                   className={`${styles.thumbnail} ${i === imgIndex ? styles.active : ""}`}
                   onClick={() => setImgIndex(i)}
-                  aria-label={`View image ${i + 1}`}>
+                  aria-label={`View image ${i + 1}`}
+                >
                   <Image src={src} alt="" width={80} height={80} />
                 </button>
               ))}
@@ -213,14 +240,20 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
         </div>
 
         <div className={styles.infoSection}>
-          <h1 className={styles.title}>{dict?.products?.[product.name]?.title ?? product.name}</h1>
+          <h1 className={styles.title}>
+            {dict?.products?.[product.name]?.title ?? product.name}
+          </h1>
           <div className={styles.price}>{price.toFixed(2)}€</div>
           <div className={styles.description}>
             <ReactMarkdown
               components={{
-                a: ({ ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />,
-              }}>
-              {dict?.products?.[product.name]?.description ?? product.description}
+                a: ({ ...props }) => (
+                  <a {...props} target="_blank" rel="noopener noreferrer" />
+                ),
+              }}
+            >
+              {dict?.products?.[product.name]?.description ??
+                product.description}
             </ReactMarkdown>
           </div>
 
@@ -233,10 +266,13 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
                 <span className={styles.label}>{optionName}</span>
                 <div className={isColor ? styles.colorOptions : styles.options}>
                   {values.map((val) => {
-                    const isSelected = normalize(selected[optionName]) === normalize(val);
+                    const isSelected =
+                      normalize(selected[optionName]) === normalize(val);
                     const hasAvailable = product.variants.some((v) => {
                       const priorMatch = priorOptions.every(
-                        (prior) => normalize(v.options?.[prior]) === normalize(selected[prior])
+                        (prior) =>
+                          normalize(v.options?.[prior]) ===
+                          normalize(selected[prior]),
                       );
                       return (
                         priorMatch &&
@@ -246,7 +282,10 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
                     });
 
                     if (isColor) {
-                      const color = getColorFromOptions({ [optionName]: val }, undefined);
+                      const color = getColorFromOptions(
+                        { [optionName]: val },
+                        undefined,
+                      );
                       return (
                         <button
                           key={val}
@@ -274,7 +313,8 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
                         ].join(" ")}
                         onClick={() => handleSelect(optionName, val)}
                         disabled={!hasAvailable}
-                        aria-label={`Select ${optionName} ${val}`}>
+                        aria-label={`Select ${optionName} ${val}`}
+                      >
                         {val}
                       </button>
                     );
@@ -284,16 +324,27 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
             );
           })}
 
-          <span className={styles.label}>{dict?.labels?.quantity ?? "Quantidade"}</span>
+          <span className={styles.label}>
+            {dict?.labels?.quantity ?? "Quantidade"}
+          </span>
           <div className={styles.qtyAndButton}>
-            <div className={`${styles.quantity} ${isJantarDeCurso ? styles.quantityDisabled : ""}`}>
-              <button onClick={() => setQty((q) => Math.max(1, q - 1))} disabled={isJantarDeCurso}>
+            <div
+              className={`${styles.quantity} ${isJantarDeCurso ? styles.quantityDisabled : ""}`}
+            >
+              <button
+                onClick={() => setQty((q) => Math.max(1, q - 1))}
+                disabled={isJantarDeCurso}
+              >
                 -
               </button>
               <span>{qty}</span>
               <button
                 onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
-                disabled={isJantarDeCurso || (product.stock_type === "limited" && qty >= maxQty)}>
+                disabled={
+                  isJantarDeCurso ||
+                  (product.stock_type === "limited" && qty >= maxQty)
+                }
+              >
                 +
               </button>
             </div>
@@ -301,10 +352,15 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
               className={styles.addButtonWrapper}
               onClick={() => {
                 if (!canBuy) addToCart();
-              }}>
-              <button className={styles.addButton} onClick={addToCart} disabled={!canBuy}>
-                {isJantarDeCurso 
-                  ? (dict?.buttons?.buy_now ?? "Comprar já") 
+              }}
+            >
+              <button
+                className={styles.addButton}
+                onClick={addToCart}
+                disabled={!canBuy}
+              >
+                {isJantarDeCurso
+                  ? (dict?.buttons?.buy_now ?? "Comprar já")
                   : (dict?.buttons?.add_to_cart ?? "Adicionar ao Carrinho")}
               </button>
             </div>
@@ -318,27 +374,42 @@ export default function ProductDetail({ product, dict }: ProductDetailProps) {
                   <FiChevronDown className={styles.detailIcon} aria-hidden />
                 </summary>
                 <p>
-                  {(dict?.size_guide_text ?? "Check our {link} for more details.").split("{link}")[0]}
+                  {
+                    (
+                      dict?.size_guide_text ??
+                      "Check our {link} for more details."
+                    ).split("{link}")[0]
+                  }
                   <a
                     href="#"
                     className={styles.sizeGuideLink}
                     onClick={(e) => {
                       e.preventDefault();
                       setShowSizeGuide(true);
-                    }}>
+                    }}
+                  >
                     {dict?.size_guide_link ?? "Guia de Tamanhos"}
                   </a>
-                  {(dict?.size_guide_text ?? "Check our {link} for more details.").split("{link}")[1]}
+                  {
+                    (
+                      dict?.size_guide_text ??
+                      "Check our {link} for more details."
+                    ).split("{link}")[1]
+                  }
                 </p>
               </details>
-              <SizeGuideOverlay open={showSizeGuide} onClose={() => setShowSizeGuide(false)} />
+              <SizeGuideOverlay
+                open={showSizeGuide}
+                onClose={() => setShowSizeGuide(false)}
+              />
               <details className={styles.detailsBlock}>
                 <summary>
                   <span>{dict?.delivery_title ?? "Prazos de Entrega"}</span>
                   <FiChevronDown className={styles.detailIcon} aria-hidden />
                 </summary>
                 <p>
-                  {dict?.delivery_text ?? "Encomenda até 25 de Dezembro para receberes entre 20 e 25 de Janeiro. Pedidos após esta data terão um tempo de espera superior."}
+                  {dict?.delivery_text ??
+                    "Encomenda até 25 de Dezembro para receberes entre 20 e 25 de Janeiro. Pedidos após esta data terão um tempo de espera superior."}
                 </p>
               </details>
             </div>

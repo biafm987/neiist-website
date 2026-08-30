@@ -26,7 +26,13 @@ function formatDate(date: Date | null, locale: string): string {
   return date.toLocaleDateString(locale, { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
-function formatDateRange(start: Date | null, end: Date | null, from: string, until: string, locale: string): string {
+function formatDateRange(
+  start: Date | null,
+  end: Date | null,
+  from: string,
+  until: string,
+  locale: string
+): string {
   if (start && end) return `${formatDate(start, locale)} - ${formatDate(end, locale)}`;
   if (start) return `${from} ${formatDate(start, locale)}`;
   if (end) return `${until} ${formatDate(end, locale)}`;

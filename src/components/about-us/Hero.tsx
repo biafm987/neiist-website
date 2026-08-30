@@ -26,12 +26,6 @@ export default function Hero({
   heroDict,
   description,
 }: HeroProps) {
-  const titleClasses = [
-    styles.primary,
-    styles.secondary,
-    styles.tertiary,
-    styles.quaternary,
-  ];
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) setSelectedTeam(null);
@@ -95,7 +89,7 @@ export default function Hero({
                 onClick={() => setSelectedTeam(team)}
                 role="button">
                 <Icon className={styles.icon} />
-                <h3 className={styles.teamName}>{(team as any).displayName ?? team.name}</h3>
+                <h3 className={styles.teamName}>{team.displayName ?? team.name}</h3>
               </div>
             );
           })}

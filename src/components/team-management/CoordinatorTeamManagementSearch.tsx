@@ -21,9 +21,9 @@ export default function CoordinatorTeamManagementSearch({
 }) {
   const [selectedTeam, setSelectedTeam] = useState(coordinatorTeams[0] || "");
   const [memberships, setMemberships] = useState<Membership[]>([]);
-  const [roles, setRoles] = useState<Array<{ role_name: string; access: string; active: boolean }>>(
-    []
-  );
+  const [roles, setRoles] = useState<
+    Array<{ role_name: string; access: string; active: boolean }>
+  >([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [selectedUser, setSelectedUser] = useState("");
@@ -38,20 +38,25 @@ export default function CoordinatorTeamManagementSearch({
     async (team: string) => {
       setLoading(true);
       try {
-        const response = await fetch(`/api/admin/roles?department=${encodeURIComponent(team)}`);
+        const response = await fetch(
+          `/api/admin/roles?department=${encodeURIComponent(team)}`,
+        );
         if (response.ok) {
           const data = await response.json();
           const assignedRoles = initialMemberships
-            .filter((membership) => membership.departmentName === team && membership.isActive)
+            .filter(
+              (membership) =>
+                membership.departmentName === team && membership.isActive,
+            )
             .map((membership) => membership.roleName);
 
           setRoles(
             Array.isArray(data)
               ? data.filter(
                   (role: { role_name: string; active: boolean }) =>
-                    role.active && !assignedRoles.includes(role.role_name)
+                    role.active && !assignedRoles.includes(role.role_name),
                 )
-              : []
+              : [],
           );
         } else {
           setRoles([]);
@@ -62,14 +67,15 @@ export default function CoordinatorTeamManagementSearch({
         setLoading(false);
       }
     },
-    [initialMemberships]
+    [initialMemberships],
   );
 
   useEffect(() => {
     setMemberships(
       initialMemberships.filter(
-        (membership) => membership.departmentName === selectedTeam && membership.isActive
-      )
+        (membership) =>
+          membership.departmentName === selectedTeam && membership.isActive,
+      ),
     );
     setSelectedUser("");
     setSelectedRole("");
@@ -88,8 +94,9 @@ export default function CoordinatorTeamManagementSearch({
         const data: Membership[] = await response.json();
         setMemberships(
           data.filter(
-            (membership) => membership.departmentName === selectedTeam && membership.isActive
-          )
+            (membership) =>
+              membership.departmentName === selectedTeam && membership.isActive,
+          ),
         );
       }
     } catch {
@@ -186,7 +193,8 @@ export default function CoordinatorTeamManagementSearch({
           className={styles.teamSelector}
           value={selectedTeam}
           onChange={(event) => setSelectedTeam(event.target.value)}
-          disabled={loading || coordinatorTeams.length < 2}>
+          disabled={loading || coordinatorTeams.length < 2}
+        >
           {coordinatorTeams.map((team) => (
             <option key={team} value={team}>
               {team}
@@ -195,13 +203,16 @@ export default function CoordinatorTeamManagementSearch({
         </select>
       </div>
       <section className={styles.section}>
-        <h3 className={styles.sectionTitle}>{dict.coordinator_management.add_member_title}</h3>
+        <h3 className={styles.sectionTitle}>
+          {dict.coordinator_management.add_member_title}
+        </h3>
         <form className={styles.addMemberForm} onSubmit={handleAddMember}>
           <select
             className={styles.input}
             value={selectedUser}
             onChange={(event) => setSelectedUser(event.target.value)}
-            disabled={loading}>
+            disabled={loading}
+          >
             <option value="">{dict.coordinator_management.select_user}</option>
             {users.map((user) => (
               <option key={user.istid} value={user.istid}>
@@ -213,7 +224,8 @@ export default function CoordinatorTeamManagementSearch({
             className={styles.input}
             value={selectedRole}
             onChange={(event) => setSelectedRole(event.target.value)}
-            disabled={loading}>
+            disabled={loading}
+          >
             <option value="">{dict.coordinator_management.select_role}</option>
             {roles.map((role) => (
               <option key={role.role_name} value={role.role_name}>
@@ -224,7 +236,8 @@ export default function CoordinatorTeamManagementSearch({
           <button
             className={styles.addMemberBtn}
             type="submit"
-            disabled={loading || !selectedUser || !selectedRole}>
+            disabled={loading || !selectedUser || !selectedRole}
+          >
             {dict.coordinator_management.add_member}
           </button>
         </form>
@@ -232,9 +245,13 @@ export default function CoordinatorTeamManagementSearch({
         {error && <div className={styles.error}>{error}</div>}
       </section>
       <section className={styles.section}>
-        <h3 className={styles.sectionTitle}>{dict.coordinator_management.existing_members_title}</h3>
+        <h3 className={styles.sectionTitle}>
+          {dict.coordinator_management.existing_members_title}
+        </h3>
         {memberships.length === 0 ? (
-          <div className={styles.emptyMessage}>{dict.coordinator_management.empty}</div>
+          <div className={styles.emptyMessage}>
+            {dict.coordinator_management.empty}
+          </div>
         ) : (
           <div className={styles.membersList}>
             {memberships.map((member) => (
@@ -250,13 +267,21 @@ export default function CoordinatorTeamManagementSearch({
                 <div className={styles.memberRole}>{member.roleName}</div>
                 <div className={styles.memberEmail}>{member.userEmail}</div>
                 <div className={styles.memberSince}>
-                  {dict.coordinator_management.since_label.replace("{date}", new Date(member.startDate).toLocaleDateString())}
+                  {dict.coordinator_management.since_label.replace(
+                    "{date}",
+                    new Date(member.startDate).toLocaleDateString(),
+                  )}
                 </div>
-                <span className={styles.badge}>{dict.coordinator_management.active_badge}</span>
+                <span className={styles.badge}>
+                  {dict.coordinator_management.active_badge}
+                </span>
                 <button
                   className={styles.deleteBtn}
-                  onClick={() => handleRemoveMember(member.userNumber, member.roleName)}
-                  disabled={loading}>
+                  onClick={() =>
+                    handleRemoveMember(member.userNumber, member.roleName)
+                  }
+                  disabled={loading}
+                >
                   {dict.coordinator_management.remove}
                 </button>
               </div>

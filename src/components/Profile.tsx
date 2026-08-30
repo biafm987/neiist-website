@@ -24,7 +24,12 @@ import { getFirstAndLastName } from "@/utils/userUtils";
 import type { ProfileDict } from "@/types/i18n";
 import ColorfulText from "./ColorfulText";
 
-type FieldName = "alternativeEmail" | "phone" | "preferredContactMethod" | "github" | "linkedin";
+type FieldName =
+  | "alternativeEmail"
+  | "phone"
+  | "preferredContactMethod"
+  | "github"
+  | "linkedin";
 
 export default function ProfileClient({
   initialUser,
@@ -40,17 +45,26 @@ export default function ProfileClient({
   const [cvLoading, setCvLoading] = useState<boolean>(false);
   const [calendarLoading, setCalendarLoading] = useState<boolean>(false);
 
-  const [altEmailDraft, setAltEmailDraft] = useState<string>(initialUser?.alternativeEmail ?? "");
-  const [phoneDraft, setPhoneDraft] = useState<string>(initialUser?.phone ?? "");
+  const [altEmailDraft, setAltEmailDraft] = useState<string>(
+    initialUser?.alternativeEmail ?? "",
+  );
+  const [phoneDraft, setPhoneDraft] = useState<string>(
+    initialUser?.phone ?? "",
+  );
   const [preferredDraft, setPreferredDraft] = useState<string>(
-    initialUser?.preferredContactMethod ?? "email"
+    initialUser?.preferredContactMethod ?? "email",
   );
-  const [githubDraft, setGithubDraft] = useState<string>(initialUser?.github ?? "");
-  const [linkedinDraft, setLinkedinDraft] = useState<string>(initialUser?.linkedin ?? "");
+  const [githubDraft, setGithubDraft] = useState<string>(
+    initialUser?.github ?? "",
+  );
+  const [linkedinDraft, setLinkedinDraft] = useState<string>(
+    initialUser?.linkedin ?? "",
+  );
 
-  const [pendingChange, setPendingChange] = useState<{ field: FieldName; value: string } | null>(
-    null
-  );
+  const [pendingChange, setPendingChange] = useState<{
+    field: FieldName;
+    value: string;
+  } | null>(null);
   const [calendarData, setCalendarData] = useState<{
     addCalendarLink: string;
     webViewLink: string;
@@ -58,7 +72,11 @@ export default function ProfileClient({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [error, setError] = useState<string>("");
 
-  const isMember = checkRoles(user, [UserRole._MEMBER, UserRole._COORDINATOR, UserRole._ADMIN]);
+  const isMember = checkRoles(user, [
+    UserRole._MEMBER,
+    UserRole._COORDINATOR,
+    UserRole._ADMIN,
+  ]);
 
   useEffect(() => {
     setAltEmailDraft(user?.alternativeEmail ?? "");
@@ -75,11 +93,15 @@ export default function ProfileClient({
   };
 
   const handleBlur = (
-    field: Extract<FieldName, "alternativeEmail" | "phone" | "github" | "linkedin">,
-    value: string
+    field: Extract<
+      FieldName,
+      "alternativeEmail" | "phone" | "github" | "linkedin"
+    >,
+    value: string,
   ) => {
     if (
-      (field === "alternativeEmail" && value !== (user?.alternativeEmail ?? "")) ||
+      (field === "alternativeEmail" &&
+        value !== (user?.alternativeEmail ?? "")) ||
       (field === "phone" && value !== (user?.phone ?? "")) ||
       (field === "github" && value !== (user?.github ?? "")) ||
       (field === "linkedin" && value !== (user?.linkedin ?? ""))
@@ -159,7 +181,9 @@ export default function ProfileClient({
       return links;
     } catch (e) {
       // TODO: (ERROR)
-      setError(e instanceof Error ? e.message : dict?.errors?.get_calendar_link);
+      setError(
+        e instanceof Error ? e.message : dict?.errors?.get_calendar_link,
+      );
       return null;
     }
   };
@@ -208,7 +232,10 @@ export default function ProfileClient({
       form.append("file", file);
       form.append("istid", user.istid);
 
-      const res = await fetch("/api/user/cv-bank", { method: "POST", body: form });
+      const res = await fetch("/api/user/cv-bank", {
+        method: "POST",
+        body: form,
+      });
       if (!res.ok) throw new Error(dict?.errors?.cv_upload);
       setHasCV(true);
       // TODO: (SUCCESS) show success toast after the CV is uploaded.
@@ -278,7 +305,8 @@ export default function ProfileClient({
         (
           {
             email: dict?.values?.preferredContactMethod?.email,
-            alternativeEmail: dict?.values?.preferredContactMethod?.alternativeEmail,
+            alternativeEmail:
+              dict?.values?.preferredContactMethod?.alternativeEmail,
             phone: dict?.values?.preferredContactMethod?.phone,
           } as Record<string, string>
         )[value] || value
@@ -287,7 +315,10 @@ export default function ProfileClient({
     return value || "—";
   };
 
-  const getConfirmMessage = (change: { field: FieldName; value: string }): string => {
+  const getConfirmMessage = (change: {
+    field: FieldName;
+    value: string;
+  }): string => {
     const fieldName = getFieldDisplayName(change.field) || "";
 
     if (change.value === "") {
@@ -321,7 +352,9 @@ export default function ProfileClient({
           </div>
           <div className={styles.contactInfo}>
             <div>
-              <div className={styles.contactLabel}>{dict?.labels?.alternativeEmail}</div>
+              <div className={styles.contactLabel}>
+                {dict?.labels?.alternativeEmail}
+              </div>
               <div className={styles.contactField}>
                 <FiMail className={styles.icon} />
                 <input
@@ -352,25 +385,38 @@ export default function ProfileClient({
               </div>
             </div>
             <div>
-              <div className={styles.contactLabel}>{dict?.labels?.preferredContactMethod}</div>
+              <div className={styles.contactLabel}>
+                {dict?.labels?.preferredContactMethod}
+              </div>
               <div className={styles.contactField}>
                 <RiContactsBook3Line className={styles.icon} />
                 <select
                   className={styles.contactSelect}
                   value={preferredDraft}
-                  onChange={(e) => handlePreferredChange(e.target.value)}>
-                  <option value="email">{dict?.values?.preferredContactMethod?.email}</option>
+                  onChange={(e) => handlePreferredChange(e.target.value)}
+                >
+                  <option value="email">
+                    {dict?.values?.preferredContactMethod?.email}
+                  </option>
                   {(altEmailDraft || user?.alternativeEmail) && (
-                    <option value="alternativeEmail">{dict?.values?.preferredContactMethod?.alternativeEmail}</option>
+                    <option value="alternativeEmail">
+                      {dict?.values?.preferredContactMethod?.alternativeEmail}
+                    </option>
                   )}
-                  {(phoneDraft || user?.phone) && <option value="phone">{dict?.values?.preferredContactMethod?.phone}</option>}
+                  {(phoneDraft || user?.phone) && (
+                    <option value="phone">
+                      {dict?.values?.preferredContactMethod?.phone}
+                    </option>
+                  )}
                 </select>
               </div>
             </div>
             {isMember && (
               <>
                 <div>
-                  <div className={styles.contactLabel}>{dict?.github_label}</div>
+                  <div className={styles.contactLabel}>
+                    {dict?.github_label}
+                  </div>
                   <div className={styles.contactField}>
                     <FiGithub className={styles.icon} />
                     <input
@@ -384,7 +430,9 @@ export default function ProfileClient({
                   </div>
                 </div>
                 <div>
-                  <div className={styles.contactLabel}>{dict?.linkedin_label}</div>
+                  <div className={styles.contactLabel}>
+                    {dict?.linkedin_label}
+                  </div>
                   <div className={styles.contactField}>
                     <FiLinkedin className={styles.icon} />
                     <input
@@ -409,7 +457,9 @@ export default function ProfileClient({
                   <FiCalendar className={styles.icon} />
                   <span>{dict?.sections?.calendar}</span>
                 </div>
-                <p className={styles.infoText}>{dict?.sections?.calendarDescription}</p>
+                <p className={styles.infoText}>
+                  {dict?.sections?.calendarDescription}
+                </p>
                 <div className={styles.actionButtons}>
                   <a
                     className={styles.button}
@@ -421,8 +471,12 @@ export default function ProfileClient({
                     style={{
                       cursor: calendarLoading ? "not-allowed" : "pointer",
                       opacity: calendarLoading ? 0.6 : 1,
-                    }}>
-                    <LuCalendarDays /> {calendarLoading ? dict?.labels?.loading: dict?.buttons?.view_calendar}
+                    }}
+                  >
+                    <LuCalendarDays />{" "}
+                    {calendarLoading
+                      ? dict?.labels?.loading
+                      : dict?.buttons?.view_calendar}
                   </a>
                   <a
                     className={styles.filledButton}
@@ -434,21 +488,26 @@ export default function ProfileClient({
                     style={{
                       cursor: calendarLoading ? "not-allowed" : "pointer",
                       opacity: calendarLoading ? 0.6 : 1,
-                    }}>
+                    }}
+                  >
                     <IoOpenOutline />{" "}
-                    {calendarLoading ? dict?.labels?.loading : dict?.buttons?.open_in_google}
+                    {calendarLoading
+                      ? dict?.labels?.loading
+                      : dict?.buttons?.open_in_google}
                   </a>
                 </div>
               </div>
             </>
           )}
           <div className={styles.cvbank}>
-                <div className={styles.sectionTitle}>
+            <div className={styles.sectionTitle}>
               <FiUpload className={styles.icon} />
               <span>{dict?.sections?.cvbank}</span>
               <div className={styles.infoBubbleWrapper}>
                 <FiInfo className={styles.infoBubble} />
-                <div className={styles.tooltip}>{dict?.sections?.cvbankTooltip}</div>
+                <div className={styles.tooltip}>
+                  {dict?.sections?.cvbankTooltip}
+                </div>
               </div>
             </div>
             {!hasCV ? (
@@ -469,11 +528,19 @@ export default function ProfileClient({
                 />
               </>
             ) : (
-                <div className={styles.actionButtons}>
-                <button className={styles.button} onClick={onCvDownload} disabled={cvLoading}>
+              <div className={styles.actionButtons}>
+                <button
+                  className={styles.button}
+                  onClick={onCvDownload}
+                  disabled={cvLoading}
+                >
                   <FiDownload /> {dict?.buttons?.download_cv}
                 </button>
-                <button className={styles.button} onClick={onCvRemove} disabled={cvLoading}>
+                <button
+                  className={styles.button}
+                  onClick={onCvRemove}
+                  disabled={cvLoading}
+                >
                   <FiTrash2 /> {dict?.buttons?.remove_cv}
                 </button>
               </div>

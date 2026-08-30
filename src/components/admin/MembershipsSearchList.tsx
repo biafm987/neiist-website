@@ -9,7 +9,6 @@ import ConfirmDialog from "@/components/layout/ConfirmDialog";
 import styles from "@/styles/components/admin/MembershipsSearchList.module.css";
 import type { MembershipsSearchListDict } from "@/types/i18n";
 
-
 interface Department {
   name: string;
   active: boolean;
@@ -43,20 +42,24 @@ export default function MembershipsSearchList({
     departmentName: "",
     roleName: "",
   });
-  const [roles, setRoles] = useState<{ role_name: string; access: string; active: boolean }[]>([]);
+  const [roles, setRoles] = useState<
+    { role_name: string; access: string; active: boolean }[]
+  >([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingRemove, setPendingRemove] = useState<{
     userNumber: string;
     departmentName: string;
     roleName: string;
   } | null>(null);
-  const [editingPhotoIstid, setEditingPhotoIstid] = useState<string | null>(null);
+  const [editingPhotoIstid, setEditingPhotoIstid] = useState<string | null>(
+    null,
+  );
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { user, setUser } = useUser();
 
   const filteredMemberships = useMemo(() => {
     const base = memberships.filter((membership) =>
-      showInactive ? !membership.isActive : membership.isActive
+      showInactive ? !membership.isActive : membership.isActive,
     );
 
     const rawQuery = search.trim();
@@ -71,12 +74,13 @@ export default function MembershipsSearchList({
       const digits = rawQuery.replace(/[^0-9]/g, "");
 
       const exact = base.filter(
-        (membership) => (membership.userNumber || "").replace(/[^0-9]/g, "") === digits
+        (membership) =>
+          (membership.userNumber || "").replace(/[^0-9]/g, "") === digits,
       );
       if (exact.length > 0) return exact;
 
       return base.filter((membership) =>
-        (membership.userNumber || "").replace(/[^0-9]/g, "").startsWith(digits)
+        (membership.userNumber || "").replace(/[^0-9]/g, "").startsWith(digits),
       );
     }
 
@@ -85,11 +89,13 @@ export default function MembershipsSearchList({
     return base
       .filter((membership) => {
         const searchableText = normalizeText(
-          `${membership.userName} ${membership.userEmail} ${membership.departmentName} ${membership.roleName}`
+          `${membership.userName} ${membership.userEmail} ${membership.departmentName} ${membership.roleName}`,
         );
         const textTokens = searchableText.split(/\s+/).filter(Boolean);
 
-        return queryTokens.every((qToken) => textTokens.some((token) => token.startsWith(qToken)));
+        return queryTokens.every((qToken) =>
+          textTokens.some((token) => token.startsWith(qToken)),
+        );
       })
       .sort((a, b) => a.userName.localeCompare(b.userName));
   }, [memberships, search, showInactive]);
@@ -98,11 +104,15 @@ export default function MembershipsSearchList({
     setNewMembership({ ...newMembership, departmentName, roleName: "" });
     if (departmentName) {
       const response = await fetch(
-        `/api/admin/roles?department=${encodeURIComponent(departmentName)}`
+        `/api/admin/roles?department=${encodeURIComponent(departmentName)}`,
       );
       if (response.ok) {
         const data = await response.json();
-        setRoles(Array.isArray(data) ? data.filter((r: { active: boolean }) => r.active) : []);
+        setRoles(
+          Array.isArray(data)
+            ? data.filter((r: { active: boolean }) => r.active)
+            : [],
+        );
       } else {
         setRoles([]);
       }
@@ -113,7 +123,11 @@ export default function MembershipsSearchList({
 
   const addMembership = async () => {
     setError("");
-    if (!newMembership.userNumber || !newMembership.departmentName || !newMembership.roleName)
+    if (
+      !newMembership.userNumber ||
+      !newMembership.departmentName ||
+      !newMembership.roleName
+    )
       return;
     setAdding(true);
     try {
@@ -148,7 +162,11 @@ export default function MembershipsSearchList({
     }
   };
 
-  const handleRemoveClick = (userNumber: string, departmentName: string, roleName: string) => {
+  const handleRemoveClick = (
+    userNumber: string,
+    departmentName: string,
+    roleName: string,
+  ) => {
     setPendingRemove({ userNumber, departmentName, roleName });
     setConfirmOpen(true);
   };
@@ -197,7 +215,10 @@ export default function MembershipsSearchList({
     fileInputRef.current?.click();
   };
 
-  const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>, istid: string) => {
+  const handlePhotoChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    istid: string,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
     const photoData = new FileReader();
@@ -212,8 +233,10 @@ export default function MembershipsSearchList({
         const newPhotoUrl = `/api/user/photo/${istid}?custom&${Date.now()}`;
         setMemberships((prev) =>
           prev.map((membership) =>
-            membership.userNumber === istid ? { ...membership, userPhoto: newPhotoUrl } : membership
-          )
+            membership.userNumber === istid
+              ? { ...membership, userPhoto: newPhotoUrl }
+              : membership,
+          ),
         );
         if (user && user.istid === istid) {
           setUser({ ...user, photo: newPhotoUrl });
@@ -252,10 +275,14 @@ export default function MembershipsSearchList({
           <select
             value={newMembership.userNumber}
             onChange={(inputEvent) =>
-              setNewMembership({ ...newMembership, userNumber: inputEvent.target.value })
+              setNewMembership({
+                ...newMembership,
+                userNumber: inputEvent.target.value,
+              })
             }
             className={styles.input}
-            disabled={adding}>
+            disabled={adding}
+          >
             <option value="">{dict.select_user}</option>
             {users.map((user) => (
               <option key={user.istid} value={user.istid}>
@@ -265,9 +292,12 @@ export default function MembershipsSearchList({
           </select>
           <select
             value={newMembership.departmentName}
-            onChange={(inputEvent) => handleDepartmentChange(inputEvent.target.value)}
+            onChange={(inputEvent) =>
+              handleDepartmentChange(inputEvent.target.value)
+            }
             className={styles.input}
-            disabled={adding}>
+            disabled={adding}
+          >
             <option value="">{dict.select_department}</option>
             {departments.map((dept) => (
               <option key={dept.name} value={dept.name}>
@@ -278,10 +308,14 @@ export default function MembershipsSearchList({
           <select
             value={newMembership.roleName}
             onChange={(inputEvent) =>
-              setNewMembership({ ...newMembership, roleName: inputEvent.target.value })
+              setNewMembership({
+                ...newMembership,
+                roleName: inputEvent.target.value,
+              })
             }
             className={styles.input}
-            disabled={adding || !newMembership.departmentName}>
+            disabled={adding || !newMembership.departmentName}
+          >
             <option value="">{dict.select_role}</option>
             {roles.map((role) => (
               <option key={role.role_name} value={role.role_name}>
@@ -297,7 +331,8 @@ export default function MembershipsSearchList({
               !newMembership.departmentName ||
               !newMembership.roleName
             }
-            className={styles.addMemberBtn}>
+            className={styles.addMemberBtn}
+          >
             {adding ? dict.adding : dict.add_member}
           </button>
         </div>
@@ -317,12 +352,14 @@ export default function MembershipsSearchList({
           />
           <button
             className={`${styles.filterBtn} ${!showInactive ? styles.active : ""}`}
-            onClick={() => setShowInactive(false)}>
+            onClick={() => setShowInactive(false)}
+          >
             {dict.active}
           </button>
           <button
             className={`${styles.filterBtn} ${showInactive ? styles.active : ""}`}
-            onClick={() => setShowInactive(true)}>
+            onClick={() => setShowInactive(true)}
+          >
             {dict.show_inactive}
           </button>
         </div>
@@ -332,16 +369,23 @@ export default function MembershipsSearchList({
           <div className={styles.membersList}>
             {filteredMemberships.map((membership) => (
               <div key={membership.id} className={styles.memberCard}>
-                <div className={membership.isActive ? styles.changePhoto : undefined}>
+                <div
+                  className={
+                    membership.isActive ? styles.changePhoto : undefined
+                  }
+                >
                   <Image
                     className={styles.memberPhoto}
                     src={membership.userPhoto}
                     alt={membership.userName}
                     width={160}
                     height={160}
-                    style={{ cursor: membership.isActive ? "pointer" : "not-allowed" }}
+                    style={{
+                      cursor: membership.isActive ? "pointer" : "not-allowed",
+                    }}
                     onClick={() => {
-                      if (membership.isActive) handlePhotoClick(membership.userNumber);
+                      if (membership.isActive)
+                        handlePhotoClick(membership.userNumber);
                     }}
                     title={
                       membership.isActive
@@ -355,7 +399,8 @@ export default function MembershipsSearchList({
                     {membership.userName} ({membership.userNumber})
                   </div>
                   <div>
-                    <strong>{dict.department_label}</strong> {membership.departmentName}
+                    <strong>{dict.department_label}</strong>{" "}
+                    {membership.departmentName}
                   </div>
                   <div>
                     <strong>{dict.role_label}</strong> {membership.roleName}
@@ -370,22 +415,29 @@ export default function MembershipsSearchList({
                       <>
                         {" "}
                         <strong>{dict.until_label}</strong>{" "}
-                        {new Date(membership.endDate).toLocaleDateString("pt-PT")}
+                        {new Date(membership.endDate).toLocaleDateString(
+                          "pt-PT",
+                        )}
                       </>
                     )}
                   </div>
                 </div>
                 <div className={styles.memberActions}>
-                  <span className={styles.badge}>{membership.isActive ? dict.active_badge : dict.inactive_badge}</span>
+                  <span className={styles.badge}>
+                    {membership.isActive
+                      ? dict.active_badge
+                      : dict.inactive_badge}
+                  </span>
                   <button
                     onClick={() =>
                       handleRemoveClick(
                         membership.userNumber,
                         membership.departmentName,
-                        membership.roleName
+                        membership.roleName,
                       )
                     }
-                    className={styles.deleteBtn}>
+                    className={styles.deleteBtn}
+                  >
                     {dict.remove}
                   </button>
                 </div>

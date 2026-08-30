@@ -12,7 +12,6 @@ export default async function ShopManagePage() {
     <ShopManagement
       products={products}
       categories={categories}
-      locale={locale}
       dict={dict.shop_management as ShopManagementDict}
     />
   );

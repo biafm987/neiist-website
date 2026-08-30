@@ -32,7 +32,11 @@ export default async function ProfilePage() {
 
   return (
     <div className={styles.container}>
-      <ProfileClient initialUser={user} initialHasCV={hasCV} dict={fullDict.profile as ProfileDict} />
+      <ProfileClient
+        initialUser={user}
+        initialHasCV={hasCV}
+        dict={fullDict.profile as ProfileDict}
+      />
     </div>
   );
 }

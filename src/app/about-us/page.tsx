@@ -180,7 +180,11 @@ export default async function AboutPage({
       />
 
       <h2 className={styles.title} />
-      <YearSelector years={allAcademicYears} selectedYear={selectedYear} dict={aboutUsDict.year_selector}/>
+      <YearSelector
+        years={allAcademicYears}
+        selectedYear={selectedYear}
+        dict={aboutUsDict.year_selector}
+      />
 
       {sortedDepartmentsWithMembers.map((department) => (
         <div key={department.name}>

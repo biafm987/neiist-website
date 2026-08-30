@@ -26,7 +26,12 @@ export default async function OrdersManagementPage({ searchParams }: PageProps) 
 
   return (
     <>
-      <OrdersTable orders={orders} products={products} locale={locale} dict={dict as OrdersTableDict} />
+      <OrdersTable
+        orders={orders}
+        products={products}
+        locale={locale}
+        dict={dict as OrdersTableDict}
+      />
       {orderId && (
         <OrderDetailOverlay
           orderId={Number(orderId)}

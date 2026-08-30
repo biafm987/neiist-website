@@ -37,7 +37,11 @@ export default async function UsersManagement() {
   return (
     <div className={styles.container}>
       <h2 className={styles.title}>{dict.admin.users_management.title}</h2>
-      <UsersSearchList users={usersWithMemberships} roles={roles} dict={dict.admin.users_management} />
+      <UsersSearchList
+        users={usersWithMemberships}
+        roles={roles}
+        dict={dict.admin.users_management}
+      />
     </div>
   );
 }

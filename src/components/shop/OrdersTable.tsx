@@ -3,7 +3,10 @@
 import { useMemo, useRef, useState } from "react";
 import styles from "@/styles/components/shop/OrdersTable.module.css";
 import { Order } from "@/types/shop/order";
-import { getStatusLabel, getStatusCssClass } from "@/utils/shop/orderStatusUtils";
+import {
+  getStatusLabel,
+  getStatusCssClass,
+} from "@/utils/shop/orderStatusUtils";
 import { OrderStatus, ORDER_STATUS_CONFIG } from "@/types/shop/orderStatus";
 import { Product } from "@/types/shop/product";
 import { FiSearch, FiCheck } from "react-icons/fi";
@@ -16,7 +19,10 @@ import {
   formatVariantSimple,
 } from "@/utils/shop/shopUtils";
 import { getFirstAndLastName } from "@/utils/userUtils";
-import { getOrderKindFromItems, getOrderStatusLabelForKind } from "@/utils/shop/orderKindUtils";
+import {
+  getOrderKindFromItems,
+  getOrderStatusLabelForKind,
+} from "@/utils/shop/orderKindUtils";
 import NewOrderModal from "./NewOrderModal";
 import PosPaymentOverlay from "@/components/shop/PosPaymentOverlay";
 import { useRouter } from "next/navigation";
@@ -28,7 +34,6 @@ import ActiveFilters from "./ActiveFilters";
 import MobileFiltersDrawer from "./MobileFiltersDrawer";
 import type { OrdersTableDict } from "@/types/i18n";
 import ColorfulText from "../ColorfulText";
-
 
 function normalizeCampus(campus?: string): string {
   return campus ? campus.trim().toLowerCase() : "";
@@ -65,7 +70,12 @@ interface FilterState {
   statuses: string[];
 }
 
-export default function OrdersTable({ orders, products, dict, locale }: OrdersTableProps) {
+export default function OrdersTable({
+  orders,
+  products,
+  dict,
+  locale,
+}: OrdersTableProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [showNewOrderModal, setShowNewOrderModal] = useState(false);
@@ -78,10 +88,13 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
   });
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
-  const [pendingBulkStatus, setPendingBulkStatus] = useState<OrderStatus | null>(null);
+  const [pendingBulkStatus, setPendingBulkStatus] =
+    useState<OrderStatus | null>(null);
   const [showPickupDialog, setShowPickupDialog] = useState(false);
   const [pickupInput, setPickupInput] = useState<string | null>(null);
-  const [newOrderPosPayment, setNewOrderPosPayment] = useState<Order | null>(null);
+  const [newOrderPosPayment, setNewOrderPosPayment] = useState<Order | null>(
+    null,
+  );
 
   const [dateFilterOpen, setDateFilterOpen] = useState(false);
   const [productsFilterOpen, setProductsFilterOpen] = useState(false);
@@ -110,12 +123,14 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
         minMatchCharLength: 2,
         shouldSort: true,
       }),
-    [orders]
+    [orders],
   );
 
   const uniqueProducts = useMemo(() => {
     const productNameSet = new Set<string>();
-    orders.forEach((order) => order.items.forEach((item) => productNameSet.add(item.product_name)));
+    orders.forEach((order) =>
+      order.items.forEach((item) => productNameSet.add(item.product_name)),
+    );
     return [...productNameSet].sort();
   }, [orders]);
 
@@ -123,7 +138,10 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
     const statusSet = new Set<string>();
     orders.forEach((order) => statusSet.add(order.status));
     return [...statusSet]
-      .filter((status) => ORDER_STATUS_CONFIG[status as keyof typeof ORDER_STATUS_CONFIG])
+      .filter(
+        (status) =>
+          ORDER_STATUS_CONFIG[status as keyof typeof ORDER_STATUS_CONFIG],
+      )
       .map((status) => status)
       .sort();
   }, [orders]);
@@ -147,15 +165,21 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
           (order.customer_name?.toLowerCase().includes(query) ?? false) ||
           (order.user_istid?.toLowerCase().includes(query) ?? false) ||
           (order.customer_email?.toLowerCase().includes(query) ?? false) ||
-          (order.payment_reference?.toLocaleLowerCase().includes(query) ?? false) ||
-          order.order_number.toLowerCase().includes(query)
+          (order.payment_reference?.toLocaleLowerCase().includes(query) ??
+            false) ||
+          order.order_number.toLowerCase().includes(query),
       );
 
-      const fuseResults = fuse.search(searchQuery.trim()).map((result) => result.item);
+      const fuseResults = fuse
+        .search(searchQuery.trim())
+        .map((result) => result.item);
 
       if (identifierMatches.length > 0) {
         const seen = new Set(identifierMatches.map((order) => order.id));
-        list = [...identifierMatches, ...fuseResults.filter((o) => !seen.has(o.id))];
+        list = [
+          ...identifierMatches,
+          ...fuseResults.filter((o) => !seen.has(o.id)),
+        ];
       } else {
         list = fuseResults;
       }
@@ -167,23 +191,31 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
 
     if (filters.products.length > 0) {
       list = list.filter((order) =>
-        order.items.some((item) => filters.products.includes(item.product_name))
+        order.items.some((item) =>
+          filters.products.includes(item.product_name),
+        ),
       );
     }
 
     if (filters.campuses.length > 0) {
-      const selectedNormalized = filters.campuses.map((campus) => campus.trim().toLowerCase());
+      const selectedNormalized = filters.campuses.map((campus) =>
+        campus.trim().toLowerCase(),
+      );
       list = list.filter((order) =>
-        selectedNormalized.includes(normalizeCampus(order.campus || ""))
+        selectedNormalized.includes(normalizeCampus(order.campus || "")),
       );
     }
 
     const { start, end } = filters.dateRange;
     if (start) {
-      list = list.filter((order) => new Date(order.created_at) >= new Date(start));
+      list = list.filter(
+        (order) => new Date(order.created_at) >= new Date(start),
+      );
     }
     if (end) {
-      list = list.filter((order) => new Date(order.created_at) <= new Date(end));
+      list = list.filter(
+        (order) => new Date(order.created_at) <= new Date(end),
+      );
     }
 
     return list;
@@ -201,8 +233,10 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
     else setSelectedOrders(new Set(filtered.map((order) => String(order.id))));
   }
 
-  const isAllSelected = selectedOrders.size === filtered.length && filtered.length > 0;
-  const isSomeSelected = selectedOrders.size > 0 && selectedOrders.size < filtered.length;
+  const isAllSelected =
+    selectedOrders.size === filtered.length && filtered.length > 0;
+  const isSomeSelected =
+    selectedOrders.size > 0 && selectedOrders.size < filtered.length;
 
   function handleClearAll(): void {
     setFilters({
@@ -236,7 +270,8 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
     const emails = Array.from(selectedOrders)
       .map((id) => {
         return (
-          orders.find((o) => String(o.id) === id) || filtered.find((o) => String(o.id) === id)
+          orders.find((o) => String(o.id) === id) ||
+          filtered.find((o) => String(o.id) === id)
         )?.customer_email;
       })
       .filter(Boolean) as string[];
@@ -245,9 +280,9 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
     const bcc = encodeURIComponent(unique.join(","));
     window.open(
       `https://accounts.google.com/AccountChooser?continue=${encodeURIComponent(
-        `https://mail.google.com/mail/?view=cm&fs=1&bcc=${bcc}`
+        `https://mail.google.com/mail/?view=cm&fs=1&bcc=${bcc}`,
       )}`,
-      "_blank"
+      "_blank",
     );
   }
 
@@ -281,7 +316,9 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
       await Promise.all(
         chunk.map(async (orderId) => {
           try {
-            const body: Record<string, unknown> = { pickup_deadline: isoString };
+            const body: Record<string, unknown> = {
+              pickup_deadline: isoString,
+            };
             const res = await fetch(`/api/shop/orders/${orderId}`, {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
@@ -291,14 +328,14 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
               failures.push(orderId);
               console.error(
                 `Failed to set pickup deadline for ${orderId}`,
-                await res.text().catch(() => null)
+                await res.text().catch(() => null),
               );
             }
           } catch (err) {
             failures.push(orderId);
             console.error(`Error setting pickup deadline for ${orderId}:`, err);
           }
-        })
+        }),
       );
     };
 
@@ -342,14 +379,14 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
               failures.push(orderId);
               console.error(
                 `Failed to update order ${orderId}`,
-                await res.text().catch(() => null)
+                await res.text().catch(() => null),
               );
             }
           } catch (err) {
             failures.push(orderId);
             console.error(`Error updating order ${orderId}:`, err);
           }
-        })
+        }),
       );
     };
 
@@ -372,9 +409,15 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
 
   const handleExport = () => {
     const ordersSheet = filtered.map((o) => ({
-      [dict.orders_table.export_status]: getOrderStatusLabelForKind(getOrderKindFromItems(o.items).orderKind, o.status, o),
+      [dict.orders_table.export_status]: getOrderStatusLabelForKind(
+        getOrderKindFromItems(o.items).orderKind,
+        o.status,
+        o,
+      ),
       [dict.orders_table.export_number]: o.order_number,
-      [dict.orders_table.export_date]: new Date(o.created_at).toLocaleString(locale),
+      [dict.orders_table.export_date]: new Date(o.created_at).toLocaleString(
+        locale,
+      ),
       [dict.orders_table.export_name]: o.customer_name,
       [dict.orders_table.export_email]: o.customer_email,
       [dict.orders_table.export_nif]: o.customer_nif || "",
@@ -385,9 +428,13 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
       [dict.orders_table.export_payment_reference]: o.payment_reference,
       [dict.orders_table.export_total]: o.total_amount,
       [dict.orders_table.export_notes]: o.notes || "",
-      [dict.orders_table.export_updated_by || "Ultima modificação por"]: o.updated_by,
+      [dict.orders_table.export_updated_by || "Ultima modificação por"]:
+        o.updated_by,
       [dict.orders_table.export_products]: o.items
-        .map((it) => `${it.product_name} ${it.variant_label || ""} x${it.quantity}`)
+        .map(
+          (it) =>
+            `${it.product_name} ${it.variant_label || ""} x${it.quantity}`,
+        )
         .join("; "),
     }));
 
@@ -420,11 +467,16 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
     filtered.forEach((order) =>
       order.items.forEach((item) => {
         const modelo = item.product_name;
-        const colorInfo = getColorFromOptions(item.variant_options, item.variant_label);
+        const colorInfo = getColorFromOptions(
+          item.variant_options,
+          item.variant_label,
+        );
         const cor = colorInfo.name || "";
         const tamanho =
-          formatVariantSimple(item.variant_options ?? undefined, item.variant_label ?? undefined)
-            .text || "";
+          formatVariantSimple(
+            item.variant_options ?? undefined,
+            item.variant_label ?? undefined,
+          ).text || "";
         const key = `${modelo}|||${cor}|||${tamanho}`;
         if (!statsMapDetalhes[key]) {
           statsMapDetalhes[key] = { modelo, cor, tamanho, quantidade: 0 };
@@ -455,7 +507,7 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
           };
         }
         statsMapCampusDate[cdKey].quantidade += item.quantity;
-      })
+      }),
     );
 
     const statsSheet = Object.values(statsMapDetalhes)
@@ -468,7 +520,9 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
       }));
 
     const statsCampusInventorySheet = Object.values(statsMapCampusInventory)
-      .sort((a, b) => sortByMultipleFields(a, b, "campus", "modelo", "cor", "tamanho"))
+      .sort((a, b) =>
+        sortByMultipleFields(a, b, "campus", "modelo", "cor", "tamanho"),
+      )
       .map((itemData) => ({
         [dict.orders_table.export_campus]: itemData.campus,
         [dict.orders_table.export_col_model]: itemData.modelo,
@@ -478,7 +532,17 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
       }));
 
     const statsCampusDateSheet = Object.values(statsMapCampusDate)
-      .sort((a, b) => sortByMultipleFields(a, b, "campus", "modelo", "data", "cor", "tamanho"))
+      .sort((a, b) =>
+        sortByMultipleFields(
+          a,
+          b,
+          "campus",
+          "modelo",
+          "data",
+          "cor",
+          "tamanho",
+        ),
+      )
       .map((itemData) => ({
         [dict.orders_table.export_campus]: itemData.campus,
         [dict.orders_table.export_col_model]: itemData.modelo,
@@ -492,26 +556,37 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
     XLSX.utils.book_append_sheet(
       excelWorkbook,
       XLSX.utils.json_to_sheet(ordersSheet),
-      dict.orders_table.export_sheet_orders
+      dict.orders_table.export_sheet_orders,
     );
-    XLSX.utils.book_append_sheet(excelWorkbook, XLSX.utils.json_to_sheet(statsSheet), dict.orders_table.export_sheet_details);
+    XLSX.utils.book_append_sheet(
+      excelWorkbook,
+      XLSX.utils.json_to_sheet(statsSheet),
+      dict.orders_table.export_sheet_details,
+    );
     XLSX.utils.book_append_sheet(
       excelWorkbook,
       XLSX.utils.json_to_sheet(statsCampusInventorySheet),
-      dict.orders_table.export_sheet_campus_inventory
+      dict.orders_table.export_sheet_campus_inventory,
     );
     XLSX.utils.book_append_sheet(
       excelWorkbook,
       XLSX.utils.json_to_sheet(statsCampusDateSheet),
-      dict.orders_table.export_sheet_campus_date
+      dict.orders_table.export_sheet_campus_date,
     );
-    XLSX.writeFile(excelWorkbook, `${dict.orders_table.export_filename}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    XLSX.writeFile(
+      excelWorkbook,
+      `${dict.orders_table.export_filename}_${new Date().toISOString().slice(0, 10)}.xlsx`,
+    );
   };
 
   return (
     <>
       <div className={styles.container}>
-        <ColorfulText as="h1" className={styles.title} text={dict.orders_table.title} />
+        <ColorfulText
+          as="h1"
+          className={styles.title}
+          text={dict.orders_table.title}
+        />
 
         <div className={styles.controlsRow}>
           <div className={styles.searchContainer}>
@@ -528,16 +603,23 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
             <button
               className={styles.mobileFilterBtn}
               onClick={() => setShowMobileFilters(true)}
-              title={dict.orders_table.filters_title}>
+              title={dict.orders_table.filters_title}
+            >
               <TbFilter size={20} />
             </button>
           </div>
           <div className={styles.rightControls}>
-            <button className={styles.iconBtn} onClick={handleExport} title={dict.orders_table.export_button}>
-
+            <button
+              className={styles.iconBtn}
+              onClick={handleExport}
+              title={dict.orders_table.export_button}
+            >
               <TbTableExport />
             </button>
-            <button className={styles.newBtn} onClick={() => setShowNewOrderModal(true)}>
+            <button
+              className={styles.newBtn}
+              onClick={() => setShowNewOrderModal(true)}
+            >
               {dict.orders_table.new_order_button}
             </button>
           </div>
@@ -547,7 +629,10 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
           <ActiveFilters
             dateRange={filters.dateRange}
             onRemoveDateRange={() =>
-              setFilters((p) => ({ ...p, dateRange: { start: null, end: null } }))
+              setFilters((p) => ({
+                ...p,
+                dateRange: { start: null, end: null },
+              }))
             }
             filterGroups={[
               {
@@ -570,9 +655,9 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
             onRemoveValue={(groupId, value) => {
               setFilters((prev) => ({
                 ...prev,
-                [groupId]: (prev[groupId as keyof FilterState] as string[]).filter(
-                  (x) => x !== value
-                ),
+                [groupId]: (
+                  prev[groupId as keyof FilterState] as string[]
+                ).filter((x) => x !== value),
               }));
             }}
             onClearAll={handleClearAll}
@@ -585,23 +670,34 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
         {selectedOrders.size > 0 && (
           <div className={styles.bulkActions}>
             <span className={styles.bulkCount}>
-              {selectedOrders.size} {selectedOrders.size !== 1 ? dict.orders_table.order_plural : dict.orders_table.order_singular} 
-              {selectedOrders.size !== 1 ? dict.orders_table.selected_plural : dict.orders_table.selected_singular}
+              {selectedOrders.size}{" "}
+              {selectedOrders.size !== 1
+                ? dict.orders_table.order_plural
+                : dict.orders_table.order_singular}
+              {selectedOrders.size !== 1
+                ? dict.orders_table.selected_plural
+                : dict.orders_table.selected_singular}
             </span>
             <div className={styles.bulkButtons}>
               <button
                 onClick={handleEmailSelected}
                 disabled={bulkLoading}
                 className={styles.bulkBtn}
-                title={dict.orders_table.send_email_selected}>
-                {bulkLoading ? dict.orders_table.processing : dict.orders_table.send_email}
+                title={dict.orders_table.send_email_selected}
+              >
+                {bulkLoading
+                  ? dict.orders_table.processing
+                  : dict.orders_table.send_email}
               </button>
               <button
                 onClick={handleSetPickupDeadline}
                 disabled={bulkLoading}
                 className={styles.bulkBtn}
-                title={dict.orders_table.set_pickup_deadline_title}>
-                {bulkLoading ? dict.orders_table.processing : dict.orders_table.set_pickup_deadline}
+                title={dict.orders_table.set_pickup_deadline_title}
+              >
+                {bulkLoading
+                  ? dict.orders_table.processing
+                  : dict.orders_table.set_pickup_deadline}
               </button>
               <InputDialog
                 open={showPickupDialog}
@@ -614,26 +710,38 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
               <button
                 onClick={() => handleBulkStatusChange("paid")}
                 disabled={bulkLoading}
-                className={styles.bulkBtn}>
-                {bulkLoading ? dict.orders_table.processing : dict.orders_table.mark_paid}
+                className={styles.bulkBtn}
+              >
+                {bulkLoading
+                  ? dict.orders_table.processing
+                  : dict.orders_table.mark_paid}
               </button>
               <button
                 onClick={() => handleBulkStatusChange("ready")}
                 disabled={bulkLoading}
-                className={styles.bulkBtn}>
-                {bulkLoading ? dict.orders_table.processing : dict.orders_table.mark_ready}
+                className={styles.bulkBtn}
+              >
+                {bulkLoading
+                  ? dict.orders_table.processing
+                  : dict.orders_table.mark_ready}
               </button>
               <button
                 onClick={() => handleBulkStatusChange("delivered")}
                 disabled={bulkLoading}
-                className={styles.bulkBtn}>
-                {bulkLoading ? dict.orders_table.processing : dict.orders_table.mark_delivered}
+                className={styles.bulkBtn}
+              >
+                {bulkLoading
+                  ? dict.orders_table.processing
+                  : dict.orders_table.mark_delivered}
               </button>
               <button
                 onClick={() => handleBulkStatusChange("cancelled")}
                 disabled={bulkLoading}
-                className={styles.bulkBtnDanger}>
-                {bulkLoading ? dict.orders_table.processing : dict.orders_table.cancel_orders}
+                className={styles.bulkBtnDanger}
+              >
+                {bulkLoading
+                  ? dict.orders_table.processing
+                  : dict.orders_table.cancel_orders}
               </button>
             </div>
           </div>
@@ -647,9 +755,12 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
                   <th className={styles.checkboxCol}>
                     <div
                       className={`${styles.checkbox} ${isAllSelected ? styles.checked : ""} ${isSomeSelected ? styles.indeterminate : ""}`}
-                      onClick={toggleAll}>
+                      onClick={toggleAll}
+                    >
                       {isAllSelected && <FiCheck />}
-                      {isSomeSelected && <span className={styles.indeterminateIcon}>−</span>}
+                      {isSomeSelected && (
+                        <span className={styles.indeterminateIcon}>−</span>
+                      )}
                     </div>
                   </th>
                   <th>{dict.orders_table.col_number}</th>
@@ -659,7 +770,8 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
                       <button
                         ref={dateFilterRef}
                         className={`${styles.headerFilterBtn} ${styles.desktopOnly}`}
-                        onClick={() => setDateFilterOpen(!dateFilterOpen)}>
+                        onClick={() => setDateFilterOpen(!dateFilterOpen)}
+                      >
                         <TbFilter size={16} />
                       </button>
                     </div>
@@ -671,7 +783,8 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
                       <button
                         ref={campusFilterRef}
                         className={`${styles.headerFilterBtn} ${styles.desktopOnly}`}
-                        onClick={() => setCampusFilterOpen(!campusFilterOpen)}>
+                        onClick={() => setCampusFilterOpen(!campusFilterOpen)}
+                      >
                         <TbFilter size={16} />
                       </button>
                     </div>
@@ -683,7 +796,10 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
                       <button
                         ref={productsFilterRef}
                         className={`${styles.headerFilterBtn} ${styles.desktopOnly}`}
-                        onClick={() => setProductsFilterOpen(!productsFilterOpen)}>
+                        onClick={() =>
+                          setProductsFilterOpen(!productsFilterOpen)
+                        }
+                      >
                         <TbFilter size={16} />
                       </button>
                     </div>
@@ -695,7 +811,8 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
                       <button
                         ref={statusFilterRef}
                         className={`${styles.headerFilterBtn} ${styles.desktopOnly}`}
-                        onClick={() => setStatusFilterOpen(!statusFilterOpen)}>
+                        onClick={() => setStatusFilterOpen(!statusFilterOpen)}
+                      >
                         <TbFilter size={16} />
                       </button>
                     </div>
@@ -707,28 +824,37 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
                   <tr
                     key={String(order.id)}
                     onClick={() => handleRowClick(order.id)}
-                    style={{ cursor: "pointer" }}>
+                    style={{ cursor: "pointer" }}
+                  >
                     <td className={styles.checkboxCell}>
                       <div
                         className={`${styles.checkbox} ${selectedOrders.has(String(order.id)) ? styles.checked : ""}`}
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleOrder(String(order.id));
-                        }}>
-                        {selectedOrders.has(String(order.id)) && <FiCheck size={16} />}
+                        }}
+                      >
+                        {selectedOrders.has(String(order.id)) && (
+                          <FiCheck size={16} />
+                        )}
                       </div>
                     </td>
                     <td>{order.order_number}</td>
-                    <td>{new Date(order.created_at).toLocaleDateString(locale)}</td>
+                    <td>
+                      {new Date(order.created_at).toLocaleDateString(locale)}
+                    </td>
                     <td>{getFirstAndLastName(order.customer_name)}</td>
                     <td className={styles.campusCell}>
-                      {order.campus ? displayCampus(normalizeCampus(order.campus)) : "-"}
+                      {order.campus
+                        ? displayCampus(normalizeCampus(order.campus))
+                        : "-"}
                     </td>
                     <td>
                       <a
                         href={`mailto:${order.customer_email}`}
                         className={styles.emailCell}
-                        onClick={(e) => e.stopPropagation()}>
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {order.customer_email}
                       </a>
                     </td>
@@ -742,11 +868,12 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
                     <td>{order.total_amount.toFixed(2)}€</td>
                     <td>
                       <span
-                        className={`${styles.statusBadge} ${styles[getStatusCssClass(order.status)]}`}>
+                        className={`${styles.statusBadge} ${styles[getStatusCssClass(order.status)]}`}
+                      >
                         {getOrderStatusLabelForKind(
                           getOrderKindFromItems(order.items).orderKind,
                           order.status,
-                          order
+                          order,
                         )}
                       </span>
                     </td>
@@ -754,7 +881,10 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={9} style={{ padding: 20, textAlign: "center" }}>
+                    <td
+                      colSpan={9}
+                      style={{ padding: 20, textAlign: "center" }}
+                    >
                       {dict.orders_table.no_orders}
                     </td>
                   </tr>
@@ -839,7 +969,7 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
             selected: filters.statuses,
             getLabel: (s) => getStatusLabel(s as OrderStatus),
           },
-        ]}        
+        ]}
         dict={dict.mobile_filters_drawer}
         locale={locale}
       />
@@ -866,7 +996,10 @@ export default function OrdersTable({ orders, products, dict, locale }: OrdersTa
             setNewOrderPosPayment(null);
             router.refresh();
           }}
-          dict={{ pos_payment: dict.pos_payment, confirm_dialog: dict.confirm_dialog }}
+          dict={{
+            pos_payment: dict.pos_payment,
+            confirm_dialog: dict.confirm_dialog,
+          }}
         />
       )}
 

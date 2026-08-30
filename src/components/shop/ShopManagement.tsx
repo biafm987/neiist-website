@@ -13,12 +13,11 @@ import ProductManagementCard from "./ProductManagementCard";
 import Fuse from "fuse.js";
 import styles from "@/styles/components/shop/ShopManagement.module.css";
 import ColorfulText from "../ColorfulText";
-import type { ShopManagementDict, ConfirmDialogDict, ProductFormDict } from "@/types/i18n";
+import type { ShopManagementDict } from "@/types/i18n";
 
 interface ShopManagementProps {
   products: Product[];
   categories: Category[];
-  locale: string;
   dict: ShopManagementDict;
 }
 
@@ -27,7 +26,7 @@ type ConfirmAction =
   | { type: "restore"; productId: number }
   | { type: "permanent"; productId: number };
 
-export default function ShopManagement({ products, categories, dict, locale }: ShopManagementProps) {
+export default function ShopManagement({ products, categories, dict }: ShopManagementProps) {
   const router = useRouter();
 
   const [search, setSearch] = useState("");

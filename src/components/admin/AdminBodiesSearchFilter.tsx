@@ -5,7 +5,6 @@ import Fuse from "fuse.js";
 import styles from "@/styles/components/admin/AdminBodiesSearchFilter.module.css";
 import type { AdminBodiesSearchFilterDict } from "@/types/i18n";
 
-
 interface AdminBody {
   name: string;
   active?: boolean;
@@ -29,7 +28,7 @@ export default function AdminBodiesSearchFilter({
         threshold: 0.4,
         ignoreLocation: true,
       }),
-    [adminBodies]
+    [adminBodies],
   );
 
   const filteredAdminBodies = useMemo(() => {
@@ -38,7 +37,9 @@ export default function AdminBodiesSearchFilter({
       : adminBodies.filter((adminBody) => adminBody.active !== false);
     if (search.trim()) {
       const results = fuse.search(search.trim());
-      filtered = filtered.filter((body) => results.some((r) => r.item.name === body.name));
+      filtered = filtered.filter((body) =>
+        results.some((r) => r.item.name === body.name),
+      );
     }
     return filtered;
   }, [adminBodies, search, showInactive, fuse]);
@@ -67,13 +68,15 @@ export default function AdminBodiesSearchFilter({
         <button
           className={`${styles.filterBtn} ${!showInactive ? styles.active : ""}`}
           onClick={() => setShowInactive(false)}
-          type="button">
+          type="button"
+        >
           {dict.active}
         </button>
         <button
           className={`${styles.filterBtn} ${showInactive ? styles.active : ""}`}
           onClick={() => setShowInactive(true)}
-          type="button">
+          type="button"
+        >
           {dict.show_inactive}
         </button>
       </div>
@@ -86,13 +89,16 @@ export default function AdminBodiesSearchFilter({
               <div key={body.name} className={styles.item}>
                 <div className={styles.itemContent}>
                   <div className={styles.itemName}>{body.name}</div>
-                  {body.active === false && <span className={styles.badge}>{dict.inactive_badge}</span>}
+                  {body.active === false && (
+                    <span className={styles.badge}>{dict.inactive_badge}</span>
+                  )}
                 </div>
                 <button
                   onClick={() => removeAdminBody(body.name)}
                   className={styles.deleteButton}
                   title={dict.deactivate_title}
-                  type="button">
+                  type="button"
+                >
                   {dict.deactivate}
                 </button>
               </div>

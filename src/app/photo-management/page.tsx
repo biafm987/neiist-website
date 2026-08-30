@@ -23,7 +23,10 @@ export default async function PhotoTeamMembersPage() {
   return (
     <>
       <h1 className={styles.title}>{dict.photo_team_members.page_title}</h1>
-      <PhotoTeamMembers membersByDepartment={membersByDepartment} dict={dict.photo_team_members as PhotoTeamMembersDict} />
+      <PhotoTeamMembers
+        membersByDepartment={membersByDepartment}
+        dict={dict.photo_team_members as PhotoTeamMembersDict}
+      />
     </>
   );
 }

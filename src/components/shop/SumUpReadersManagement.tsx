@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FiTrash2 } from "react-icons/fi";
 import styles from "@/styles/components/shop/SumUpReadersManagement.module.css";
 import { SumUpReader } from "@/types/sumup";
@@ -10,7 +10,7 @@ import type { SumUpReadersManagementDict } from "@/types/i18n";
 interface SumUpReadersManagementProps {
   dict: SumUpReadersManagementDict;
 }
-export default function SumUpReadersManagement( {dict}: SumUpReadersManagementProps) {
+export default function SumUpReadersManagement({ dict }: SumUpReadersManagementProps) {
   const [readers, setReaders] = useState<SumUpReader[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,27 +19,30 @@ export default function SumUpReadersManagement( {dict}: SumUpReadersManagementPr
   const [deleteReader, setdeleteReader] = useState<SumUpReader | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const fetchReaders = async (opts?: { silent?: boolean }) => {
-    const silent = opts?.silent ?? false;
-    if (!silent) setLoading(true);
+  const fetchReaders = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      const silent = opts?.silent ?? false;
+      if (!silent) setLoading(true);
 
-    setError(null);
-    try {
-      const res = await fetch("/api/shop/sumup/readers");
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || dict.sumup_readers.fetch_error);
+      setError(null);
+      try {
+        const res = await fetch("/api/shop/sumup/readers");
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || dict.sumup_readers.fetch_error);
 
-      setReaders(data.readers || []);
-    } catch (error) {
-      setError((error as Error).message);
-    } finally {
-      if (!silent) setLoading(false);
-    }
-  };
+        setReaders(data.readers || []);
+      } catch (error) {
+        setError((error as Error).message);
+      } finally {
+        if (!silent) setLoading(false);
+      }
+    },
+    [dict.sumup_readers.fetch_error]
+  );
 
   useEffect(() => {
     fetchReaders();
-  }, []);
+  }, [fetchReaders]);
 
   const createReader = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

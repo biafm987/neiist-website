@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { MdClose, MdSearch, MdChevronRight, MdChevronLeft } from "react-icons/md";
+import {
+  MdClose,
+  MdSearch,
+  MdChevronRight,
+  MdChevronLeft,
+} from "react-icons/md";
 import Fuse from "fuse.js";
 import CreateNewUserModal from "@/components/shop/CreateNewUserModal";
 import styles from "@/styles/components/shop/NewOrderModal.module.css";
@@ -52,7 +57,8 @@ const displayValue = (key: string, val: string) => {
   return name || hex || val;
 };
 
-const normalizeOptionValue = (value?: string) => (value ? value.replace(/["'\\]/g, "").trim() : "");
+const normalizeOptionValue = (value?: string) =>
+  value ? value.replace(/["'\\]/g, "").trim() : "";
 
 const variantLabel = (name: string, options: Record<string, string>) => {
   const values = Object.entries(options)
@@ -76,12 +82,20 @@ const getOptionKeys = (product: Product) => {
   return keys.sort();
 };
 
-const matchesSelections = (variant: ProductVariant, selections: Record<string, string>) =>
+const matchesSelections = (
+  variant: ProductVariant,
+  selections: Record<string, string>,
+) =>
   Object.entries(selections).every(
-    ([key, value]) => normalizeOptionValue(variant.options?.[key]) === normalizeOptionValue(value)
+    ([key, value]) =>
+      normalizeOptionValue(variant.options?.[key]) ===
+      normalizeOptionValue(value),
   );
 
-const getValuesForKey = (product: Product, selections: Record<string, string>): string[] => {
+const getValuesForKey = (
+  product: Product,
+  selections: Record<string, string>,
+): string[] => {
   const keys = getOptionKeys(product);
   const nextKey = keys[Object.keys(selections).length];
   if (!nextKey) return [];
@@ -89,19 +103,23 @@ const getValuesForKey = (product: Product, selections: Record<string, string>): 
     new Set(
       product.variants
         .filter((variant) => matchesSelections(variant, selections))
-        .map((v) => v.options[nextKey])
-    )
+        .map((v) => v.options[nextKey]),
+    ),
   );
 };
 
 const resolveVariant = (
   product: Product,
-  selections: Record<string, string>
+  selections: Record<string, string>,
 ): ProductVariant | null => {
   const keys = getOptionKeys(product);
   if (Object.keys(selections).length < keys.length) return null;
 
-  return product.variants.find((variant) => matchesSelections(variant, selections)) ?? null;
+  return (
+    product.variants.find((variant) =>
+      matchesSelections(variant, selections),
+    ) ?? null
+  );
 };
 
 const buildFallbackUser = (order: Order): User => ({
@@ -138,7 +156,9 @@ export default function NewOrderModal({
   const [campus, setCampus] = useState<Campus | "">("");
   const [notes, setNotes] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>(
+    [],
+  );
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showProductDropdown, setShowProductDropdown] = useState(false);
   const [showCreateUser, setShowCreateUser] = useState(false);
@@ -171,8 +191,11 @@ export default function NewOrderModal({
     "Stock insuficiente para a variante selecionada",
     "Stock insuficiente para o produto selecionado",
   ];
-  const [showStockOverrideConfirm, setShowStockOverrideConfirm] = useState(false);
-  const [stockOverrideMessage, setStockOverrideMessage] = useState<string | null>(null);
+  const [showStockOverrideConfirm, setShowStockOverrideConfirm] =
+    useState(false);
+  const [stockOverrideMessage, setStockOverrideMessage] = useState<
+    string | null
+  >(null);
 
   const userInputRef = useRef<HTMLInputElement>(null);
   const productInputRef = useRef<HTMLInputElement>(null);
@@ -187,18 +210,18 @@ export default function NewOrderModal({
             .filter((product) =>
               getOrderKindRules(
                 getOrderKindFromCategory(product.category),
-                "pos"
-              ).allowedSources.includes("pos")
+                "pos",
+              ).allowedSources.includes("pos"),
             )
-            .map((p) => [p.id, p])
-        ).values()
+            .map((p) => [p.id, p]),
+        ).values(),
       ),
-    [products]
+    [products],
   );
 
   const selectedOrderClassification = useMemo(
     () => getOrderKindFromItems(selectedProducts.map((item) => item.product)),
-    [selectedProducts]
+    [selectedProducts],
   );
 
   const selectedProductsTotal = useMemo(
@@ -207,11 +230,12 @@ export default function NewOrderModal({
         (sum, item) =>
           sum +
           (item.product.price +
-            (item.product.variants.find((v) => v.id === item.variant.id)?.price_modifier ?? 0)) *
+            (item.product.variants.find((v) => v.id === item.variant.id)
+              ?.price_modifier ?? 0)) *
             item.quantity,
-        0
+        0,
       ),
-    [selectedProducts]
+    [selectedProducts],
   );
 
   const discountAmount = appliedDiscount?.discount_amount ?? 0;
@@ -219,7 +243,7 @@ export default function NewOrderModal({
 
   const isUserRequiredForSelectedOrder = getOrderKindRules(
     selectedOrderClassification.orderKind,
-    "pos"
+    "pos",
   ).requiresUserAssignment;
 
   const productFuse = useMemo(
@@ -234,7 +258,7 @@ export default function NewOrderModal({
         minMatchCharLength: 2,
         shouldSort: true,
       }),
-    [uniqueProducts]
+    [uniqueProducts],
   );
 
   const filteredProducts = useMemo(
@@ -243,7 +267,7 @@ export default function NewOrderModal({
         ? productFuse.search(productSearch).map((result) => result.item)
         : uniqueProducts
       ).slice(0, 15),
-    [productFuse, productSearch, uniqueProducts]
+    [productFuse, productSearch, uniqueProducts],
   );
 
   const filteredUsers = useMemo(() => {
@@ -282,7 +306,7 @@ export default function NewOrderModal({
         /^\d{5,10}$/.test(userSearch.trim()) ||
         (filteredUsers.length === 0 && userSearch.length >= 5)) &&
       filteredUsers.length === 0,
-    [userSearch, filteredUsers]
+    [userSearch, filteredUsers],
   );
 
   const isEditMode = mode === "edit" && !!orderToEdit;
@@ -293,7 +317,9 @@ export default function NewOrderModal({
     const fallbackUser = buildFallbackUser(orderToEdit);
     setSelectedUser(fallbackUser);
     setUserSearch(
-      fallbackUser.istid ? `${fallbackUser.istid} - ${fallbackUser.name}` : fallbackUser.name
+      fallbackUser.istid
+        ? `${fallbackUser.istid} - ${fallbackUser.name}`
+        : fallbackUser.name,
     );
 
     setNif(orderToEdit.customer_nif ?? "");
@@ -306,7 +332,9 @@ export default function NewOrderModal({
         const product = uniqueProducts.find((p) => p.id === item.product_id);
         if (!product) return null;
 
-        const existingVariant = product.variants.find((v) => v.id === item.variant_id);
+        const existingVariant = product.variants.find(
+          (v) => v.id === item.variant_id,
+        );
         const fallbackOptions = item.variant_options ?? {};
         const variant = existingVariant ?? {
           id: item.variant_id ?? 0,
@@ -376,7 +404,7 @@ export default function NewOrderModal({
     items: T[],
     highlight: number,
     setHighlight: (_i: number) => void,
-    onSelect: (_item: T) => void
+    onSelect: (_item: T) => void,
   ) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -409,13 +437,18 @@ export default function NewOrderModal({
   const addProduct = (product: Product, variant: ProductVariant) => {
     const label = variantLabel(product.name, variant.options);
     setSelectedProducts((prev) => {
-      const idx = prev.findIndex((p) => p.product.id === product.id && p.variant.id === variant.id);
+      const idx = prev.findIndex(
+        (p) => p.product.id === product.id && p.variant.id === variant.id,
+      );
       if (idx >= 0) {
         const next = [...prev];
         next[idx] = { ...next[idx], quantity: next[idx].quantity + 1 };
         return next;
       }
-      return [...prev, { product, variant: { id: variant.id, label }, quantity: 1 }];
+      return [
+        ...prev,
+        { product, variant: { id: variant.id, label }, quantity: 1 },
+      ];
     });
     closeProductPicker();
   };
@@ -423,7 +456,13 @@ export default function NewOrderModal({
   const openCascade = (product: Product) => {
     const keys = getOptionKeys(product);
     if (!keys.length) {
-      addProduct(product, { id: 0, label: "", options: {}, price_modifier: 0, active: true });
+      addProduct(product, {
+        id: 0,
+        label: "",
+        options: {},
+        price_modifier: 0,
+        active: true,
+      });
       return;
     }
     setCascade({ product, optionKeys: keys, selections: {} });
@@ -494,7 +533,9 @@ export default function NewOrderModal({
     } catch (error) {
       setAppliedDiscount(null);
       setDiscountError(
-        error instanceof Error ? error.message : "Não foi possível validar o código."
+        error instanceof Error
+          ? error.message
+          : "Não foi possível validar o código.",
       );
     } finally {
       setDiscountLoading(false);
@@ -522,7 +563,9 @@ export default function NewOrderModal({
       stock_override: stockOverride,
       payment_method: !isEditMode ? "cash" : undefined,
       guest_checkout: !isEditMode ? guestCheckout : undefined,
-      discount_code: !isEditMode ? (appliedDiscount?.code ?? undefined) : undefined,
+      discount_code: !isEditMode
+        ? (appliedDiscount?.code ?? undefined)
+        : undefined,
       items: selectedProducts.map(({ product, variant, quantity }) => ({
         product_id: product.id,
         variant_id: variant.id || undefined,
@@ -532,7 +575,9 @@ export default function NewOrderModal({
     };
 
     const endpoint =
-      isEditMode && orderToEdit ? `/api/shop/orders/${orderToEdit.id}` : "/api/shop/orders";
+      isEditMode && orderToEdit
+        ? `/api/shop/orders/${orderToEdit.id}`
+        : "/api/shop/orders";
     const method = isEditMode ? "PUT" : "POST";
 
     const res = await fetch(endpoint, {
@@ -544,9 +589,14 @@ export default function NewOrderModal({
     if (!res.ok) {
       const data = await res.json().catch(() => null);
       const errorMessage =
-        data?.error || (isEditMode ? "Failed to update order" : "Failed to create order");
+        data?.error ||
+        (isEditMode ? "Failed to update order" : "Failed to create order");
 
-      if (!stockOverride && isAdmin && STOCK_OVERRIDE_ERRORS.includes(errorMessage)) {
+      if (
+        !stockOverride &&
+        isAdmin &&
+        STOCK_OVERRIDE_ERRORS.includes(errorMessage)
+      ) {
         return { status: "stock_override", message: errorMessage };
       }
 
@@ -646,13 +696,20 @@ export default function NewOrderModal({
   }
 
   return (
-    <div className={styles.backdrop} onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div
+      className={styles.backdrop}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
       <div className={styles.modal}>
         <button className={styles.closeButton} onClick={onClose} type="button">
           <MdClose size={24} />
         </button>
 
-        <h2>{isEditMode ? dict.new_order_modal.title_edit : dict.new_order_modal.title_create}</h2>
+        <h2>
+          {isEditMode
+            ? dict.new_order_modal.title_edit
+            : dict.new_order_modal.title_create}
+        </h2>
 
         {/* TODO: replace this inline error with a toast and remove this fallback once Sonner is implemented here. */}
         {error && <div className={styles.error}>{error}</div>}
@@ -665,7 +722,8 @@ export default function NewOrderModal({
             } else {
               setShowGuestConfirm(true);
             }
-          }}>
+          }}
+        >
           {!isEditMode && (
             <div className={styles.formGroup}>
               <label>{dict.new_order_modal.user_label}</label>
@@ -675,7 +733,11 @@ export default function NewOrderModal({
                   ref={userInputRef}
                   type="text"
                   placeholder={dict.new_order_modal.user_placeholder}
-                  value={selectedUser ? `${selectedUser.istid} - ${selectedUser.name}` : userSearch}
+                  value={
+                    selectedUser
+                      ? `${selectedUser.istid} - ${selectedUser.name}`
+                      : userSearch
+                  }
                   onChange={(e) => {
                     if (selectedUser) {
                       setSelectedUser(null);
@@ -689,10 +751,14 @@ export default function NewOrderModal({
                   onKeyDown={(e) =>
                     navigate(
                       e,
-                      [...filteredUsers, ...(showCreateUserOption ? [null] : [])],
+                      [
+                        ...filteredUsers,
+                        ...(showCreateUserOption ? [null] : []),
+                      ],
                       userHighlight,
                       setUserHighlight,
-                      (item) => (item ? selectUser(item) : setShowCreateUser(true))
+                      (item) =>
+                        item ? selectUser(item) : setShowCreateUser(true),
                     )
                   }
                   className={styles.input}
@@ -706,7 +772,8 @@ export default function NewOrderModal({
                       setUserSearch("");
                       userInputRef.current?.focus();
                     }}
-                    type="button">
+                    type="button"
+                  >
                     <MdClose size={18} />
                   </button>
                 )}
@@ -718,7 +785,8 @@ export default function NewOrderModal({
                         key={user.istid}
                         className={`${styles.dropdownItem} ${idx === userHighlight ? styles.highlighted : ""}`}
                         onClick={() => selectUser(user)}
-                        onMouseEnter={() => setUserHighlight(idx)}>
+                        onMouseEnter={() => setUserHighlight(idx)}
+                      >
                         <div className={styles.dropdownItemTitle}>
                           {user.istid} - {user.name}
                         </div>
@@ -728,8 +796,13 @@ export default function NewOrderModal({
                       <div
                         className={`${styles.dropdownItem} ${filteredUsers.length === userHighlight ? styles.highlighted : ""}`}
                         onClick={() => setShowCreateUser(true)}
-                        onMouseEnter={() => setUserHighlight(filteredUsers.length)}>
-                        <div className={styles.dropdownItemTitle}>{dict.new_order_modal.user_not_found}</div>
+                        onMouseEnter={() =>
+                          setUserHighlight(filteredUsers.length)
+                        }
+                      >
+                        <div className={styles.dropdownItemTitle}>
+                          {dict.new_order_modal.user_not_found}
+                        </div>
                         <div className={styles.dropdownItemSubtitle}>
                           {dict.new_order_modal.user_create_new}
                         </div>
@@ -767,60 +840,75 @@ export default function NewOrderModal({
                         getValuesForKey(cascade.product, cascade.selections),
                         productHighlight,
                         setProductHighlight,
-                        selectCascadeValue
+                        selectCascadeValue,
                       )
                     : navigate(
                         e,
                         filteredProducts,
                         productHighlight,
                         setProductHighlight,
-                        openCascade
+                        openCascade,
                       )
                 }
                 className={styles.productInput}
                 disabled={isSubmitting}
               />
 
-              {showProductDropdown && !cascade && filteredProducts.length > 0 && (
-                <div className={styles.dropdown} ref={productDropdownRef}>
-                  {filteredProducts.map((product, idx) => (
-                    <div
-                      key={product.id}
-                      className={`${styles.dropdownItem} ${idx === productHighlight ? styles.highlighted : ""}`}
-                      onClick={() => openCascade(product)}
-                      onMouseEnter={() => setProductHighlight(idx)}>
-                      <div className={styles.dropdownItemTitle}>
-                        {product.name}
-                        {product.variants?.length > 0 && (
-                          <MdChevronRight className={styles.cascadeArrow} />
-                        )}
+              {showProductDropdown &&
+                !cascade &&
+                filteredProducts.length > 0 && (
+                  <div className={styles.dropdown} ref={productDropdownRef}>
+                    {filteredProducts.map((product, idx) => (
+                      <div
+                        key={product.id}
+                        className={`${styles.dropdownItem} ${idx === productHighlight ? styles.highlighted : ""}`}
+                        onClick={() => openCascade(product)}
+                        onMouseEnter={() => setProductHighlight(idx)}
+                      >
+                        <div className={styles.dropdownItemTitle}>
+                          {product.name}
+                          {product.variants?.length > 0 && (
+                            <MdChevronRight className={styles.cascadeArrow} />
+                          )}
+                        </div>
+                        <div className={styles.dropdownItemSubtitle}>
+                          {product.price.toFixed(2)}€
+                        </div>
                       </div>
-                      <div className={styles.dropdownItemSubtitle}>{product.price.toFixed(2)}€</div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
 
               {cascade &&
                 (() => {
                   const currentKeyIdx = Object.keys(cascade.selections).length;
                   const currentKey = cascade.optionKeys[currentKeyIdx];
-                  const values = getValuesForKey(cascade.product, cascade.selections);
+                  const values = getValuesForKey(
+                    cascade.product,
+                    cascade.selections,
+                  );
                   return (
                     <div className={styles.dropdown} ref={productDropdownRef}>
-                      <div className={styles.cascadeHeader} onClick={cascadeBack}>
+                      <div
+                        className={styles.cascadeHeader}
+                        onClick={cascadeBack}
+                      >
                         <MdChevronLeft size={18} />
                         <span className={styles.cascadeHeaderText}>
                           {cascade.product.name}
-                          {Object.entries(cascade.selections).map(([key, val]) => (
-                            <span key={key} className={styles.cascadeCrumb}>
-                              {" "}
-                              › {displayValue(key, val)}
-                            </span>
-                          ))}
+                          {Object.entries(cascade.selections).map(
+                            ([key, val]) => (
+                              <span key={key} className={styles.cascadeCrumb}>
+                                {" "}
+                                › {displayValue(key, val)}
+                              </span>
+                            ),
+                          )}
                         </span>
                       </div>
-                      <div className={styles.cascadeLevelLabel}>{currentKey}</div>
+                      <div className={styles.cascadeLevelLabel}>
+                        {currentKey}
+                      </div>
                       {values.map((val, idx) => {
                         const isColor = isColorKey(currentKey);
                         const { name: colorName, hex } = isColor
@@ -831,7 +919,8 @@ export default function NewOrderModal({
                             key={`${currentKeyIdx}-${idx}-${val}`}
                             className={`${styles.dropdownItem} ${idx === productHighlight ? styles.highlighted : ""}`}
                             onClick={() => selectCascadeValue(val)}
-                            onMouseEnter={() => setProductHighlight(idx)}>
+                            onMouseEnter={() => setProductHighlight(idx)}
+                          >
                             <div className={styles.dropdownItemTitle}>
                               <span className={styles.dropdownItemTitleContent}>
                                 {isColor && hex && (
@@ -842,8 +931,11 @@ export default function NewOrderModal({
                                 )}
                                 {colorName || val}
                               </span>
-                              {currentKeyIdx < cascade.optionKeys.length - 1 && (
-                                <MdChevronRight className={styles.cascadeArrow} />
+                              {currentKeyIdx <
+                                cascade.optionKeys.length - 1 && (
+                                <MdChevronRight
+                                  className={styles.cascadeArrow}
+                                />
                               )}
                             </div>
                           </div>
@@ -857,7 +949,10 @@ export default function NewOrderModal({
             {selectedProducts.length > 0 && (
               <div className={styles.productsList}>
                 {selectedProducts.map((item, idx) => (
-                  <div key={`${item.product.id}-${item.variant.id}`} className={styles.productItem}>
+                  <div
+                    key={`${item.product.id}-${item.variant.id}`}
+                    className={styles.productItem}
+                  >
                     <span className={styles.productText}>
                       {item.quantity}x {item.variant.label}
                     </span>
@@ -865,7 +960,8 @@ export default function NewOrderModal({
                       type="button"
                       onClick={() => removeProduct(idx)}
                       className={styles.productRemoveBtn}
-                      disabled={isSubmitting}>
+                      disabled={isSubmitting}
+                    >
                       <MdClose size={20} />
                     </button>
                   </div>
@@ -882,8 +978,11 @@ export default function NewOrderModal({
                 onChange={(e) => setCampus(e.target.value as Campus)}
                 className={styles.input}
                 disabled={isSubmitting}
-                required>
-                <option value="">{dict.new_order_modal.campus_placeholder}</option>
+                required
+              >
+                <option value="">
+                  {dict.new_order_modal.campus_placeholder}
+                </option>
                 {CAMPUS_OPTIONS.map((opt) => (
                   <option key={opt.id} value={opt.id}>
                     {opt.label}
@@ -947,14 +1046,22 @@ export default function NewOrderModal({
                   type="button"
                   className={styles.discountButton}
                   onClick={handleApplyDiscount}
-                  disabled={isSubmitting || discountLoading || selectedProducts.length === 0}>
+                  disabled={
+                    isSubmitting ||
+                    discountLoading ||
+                    selectedProducts.length === 0
+                  }
+                >
                   {discountLoading ? "A validar..." : "Aplicar"}
                 </button>
               </div>
-              {discountError && <div className={styles.discountError}>{discountError}</div>}
+              {discountError && (
+                <div className={styles.discountError}>{discountError}</div>
+              )}
               {appliedDiscount && discountAmount > 0 && (
                 <div className={styles.discountSuccess}>
-                  Desconto aplicado: - €{discountAmount.toFixed(2)} ({appliedDiscount.code})
+                  Desconto aplicado: - €{discountAmount.toFixed(2)} (
+                  {appliedDiscount.code})
                 </div>
               )}
             </div>
@@ -982,10 +1089,15 @@ export default function NewOrderModal({
               type="button"
               className={styles.buttonCancel}
               onClick={onClose}
-              disabled={isSubmitting}>
+              disabled={isSubmitting}
+            >
               {dict.new_order_modal.cancel}
             </button>
-            <button type="submit" className={styles.buttonSubmit} disabled={isSubmitting}>
+            <button
+              type="submit"
+              className={styles.buttonSubmit}
+              disabled={isSubmitting}
+            >
               {isSubmitting
                 ? isEditMode
                   ? dict.new_order_modal.submitting_edit

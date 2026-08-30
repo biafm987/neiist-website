@@ -7,7 +7,7 @@ import { FiTrash2 } from "react-icons/fi";
 import { Squash } from "hamburger-react";
 import { CartItem } from "@/types/shop/product";
 import styles from "@/styles/components/shop/Cart.module.css";
-import { getColorFromOptions, isColorKey } from "@/utils/shop/shopUtils";
+import { getColorFromOptions } from "@/utils/shop/shopUtils";
 import { isJantarDeCursoCategory } from "@/utils/shop/orderKindUtils";
 import type { CartDict } from "@/types/i18n";
 import VariantTags from "@/components/shop/VariantTags";

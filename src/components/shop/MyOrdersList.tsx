@@ -8,7 +8,6 @@ import styles from "@/styles/components/shop/MyOrdersList.module.css";
 import { Order } from "@/types/shop/order";
 import { Product } from "@/types/shop/product";
 import { getCompactProductsSummary } from "@/utils/shop/shopUtils";
-import { getOrderKindFromItems, getOrderStatusLabelForKind } from "@/utils/shop/orderKindUtils";
 import { getStatusLabelFromDict } from "@/utils/shop/orderStatusUtils";
 import ColorfulText from "@/components/ColorfulText";
 import type { MyOrdersDict } from "@/types/i18n";
@@ -113,7 +112,6 @@ export default function MyOrdersList({ orders, products, dict }: Props) {
           filtered.map((order) => {
             const img = selectImage(order);
             const productSummary = getCompactProductsSummary(order.items).join(" · ");
-            const orderKind = getOrderKindFromItems(order.items).orderKind;
             const statusLabel = order.delivered_at
               ? dict.delivered_on.replace("{date}", new Date(order.delivered_at).toLocaleDateString("pt-PT"))
               : getStatusLabelFromDict(order.status, dict.status);

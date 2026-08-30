@@ -27,16 +27,16 @@ import type {
 } from "@/types/events";
 import type { IconType } from "react-icons";
 import styles from "@/styles/components/activities/EventDetails.module.css";
+import type { CalendarDict } from "@/types/i18n";
 
 type CalendarEventWithOptionalCustom = CalendarEvent & { customIcon?: string };
 interface EventDetailsProps {
   event: NormalizedCalendarEvent;
   onClose: () => void;
   isSignedUp: boolean;
-  // eslint-disable-next-line no-unused-vars
-  onSignUpChange: (eventId: string, signedUp: boolean) => void;
-  onUpdate: (updatedEvent?: CalendarEvent) => void;
-  dict: any;
+  onSignUpChange: (_eventId: string, _signedUp: boolean) => void;
+  onUpdate: (_updatedEvent?: CalendarEvent) => void;
+  dict: CalendarDict;
 }
 
 export default function EventDetails({
@@ -55,7 +55,9 @@ export default function EventDetails({
   const [isProcessing, setIsProcessing] = useState(false);
   const [signedUp, setSignedUp] = useState(isSignedUp);
   const [showIconPicker, setShowIconPicker] = useState(false);
-  const [settings, setSettings] = useState<EventSettings>(() => getEventSettings(event.raw));
+  const [settings, setSettings] = useState<EventSettings>(() =>
+    getEventSettings(event.raw),
+  );
   const hasChanges = useRef(false);
 
   const ICON_REGISTRY: Record<string, IconType> = {
@@ -74,7 +76,8 @@ export default function EventDetails({
     "FaCalendar";
   const EventIcon: IconType = ICON_REGISTRY[resolvedIconName] || FA.FaCalendar;
 
-  const { startDate, endDate, startTime, endTime, isAllDay } = formatEventDateTime(event.raw);
+  const { startDate, endDate, startTime, endTime, isAllDay } =
+    formatEventDateTime(event.raw);
   const subscriberCount = event.raw.subscriberCount ?? 0;
   const maxAttendeesNum = parseInt(settings.maxAttendees) || Infinity;
   const canSignUp = settings.signupEnabled && subscriberCount < maxAttendeesNum;
@@ -102,7 +105,9 @@ export default function EventDetails({
           signupDeadline: settings.signupDeadline
             ? new Date(settings.signupDeadline).toISOString()
             : null,
-          maxAttendees: settings.maxAttendees ? parseInt(settings.maxAttendees) : null,
+          maxAttendees: settings.maxAttendees
+            ? parseInt(settings.maxAttendees)
+            : null,
           customIcon: settings.customIcon || null,
           description: settings.description || null,
         }),
@@ -133,10 +138,15 @@ export default function EventDetails({
         });
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : dict.details.errors.save_settings, {
-        id: saveToastId,
-        closeButton: true,
-      });
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : dict.details.errors.save_settings,
+        {
+          id: saveToastId,
+          closeButton: true,
+        },
+      );
     }
   }, [isAdmin, settings, event.id, event.raw, onUpdate, router, dict]);
 
@@ -146,7 +156,8 @@ export default function EventDetails({
   }, [saveSettings, onClose]);
 
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => e.key === "Escape" && handleClose();
+    const handleEscape = (e: KeyboardEvent) =>
+      e.key === "Escape" && handleClose();
     document.addEventListener("keydown", handleEscape);
     document.body.style.overflow = "hidden";
     return () => {
@@ -155,7 +166,10 @@ export default function EventDetails({
     };
   }, [handleClose]);
 
-  const updateSetting = <K extends keyof EventSettings>(key: K, value: EventSettings[K]) => {
+  const updateSetting = <K extends keyof EventSettings>(
+    key: K,
+    value: EventSettings[K],
+  ) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
     hasChanges.current = true;
   };
@@ -178,7 +192,7 @@ export default function EventDetails({
       signedUp ? dict?.details?.cancelling_signup : dict?.details?.signing_up,
       {
         closeButton: true,
-      }
+      },
     );
     try {
       const res = await fetch("/api/calendar/sign-up", {
@@ -199,17 +213,24 @@ export default function EventDetails({
       onSignUpChange(event.id, data.signedUp);
       router.refresh();
       toast.success(
-        data.signedUp ? dict?.details?.signed_up : dict?.details?.signup_cancelled,
+        data.signedUp
+          ? dict?.details?.signed_up
+          : dict?.details?.signup_cancelled,
         {
           id: signUpToastId,
           closeButton: true,
-        }
+        },
       );
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : dict.details.errors.update_signup, {
-        id: signUpToastId,
-        closeButton: true,
-      });
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : dict.details.errors.update_signup,
+        {
+          id: signUpToastId,
+          closeButton: true,
+        },
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -229,20 +250,27 @@ export default function EventDetails({
       }
       if (!res.ok) throw new Error(dict.details.errors.fetch_attendees);
       const data = await res.json();
-      const emails = (data.subscribers as EventSubscriber[]).map((s) => s.email).join(",");
+      const emails = (data.subscribers as EventSubscriber[])
+        .map((s) => s.email)
+        .join(",");
       window.open(
         `https://mail.google.com/mail/?view=cm&fs=1&bcc=${encodeURIComponent(emails)}`,
-        "_blank"
+        "_blank",
       );
       toast.success(dict?.details?.email_opened, {
         id: emailToastId,
         closeButton: true,
       });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : dict.details.errors.fetch_emails, {
-        id: emailToastId,
-        closeButton: true,
-      });
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : dict.details.errors.fetch_emails,
+        {
+          id: emailToastId,
+          closeButton: true,
+        },
+      );
     }
   };
 
@@ -257,9 +285,14 @@ export default function EventDetails({
   return (
     <div
       className={styles.modalOverlay}
-      onClick={(e) => e.target === e.currentTarget && handleClose()}>
+      onClick={(e) => e.target === e.currentTarget && handleClose()}
+    >
       <div className={styles.modalContent}>
-        <button className={styles.closeButton} onClick={handleClose} aria-label={dict?.details?.close}>
+        <button
+          className={styles.closeButton}
+          onClick={handleClose}
+          aria-label={dict?.details?.close}
+        >
           <IoClose size={32} />
         </button>
 
@@ -267,14 +300,18 @@ export default function EventDetails({
           <div
             className={styles.eventIcon}
             onClick={isAdmin ? () => setShowIconPicker(true) : undefined}
-            style={{ cursor: isAdmin ? "pointer" : "default" }}>
+            style={{ cursor: isAdmin ? "pointer" : "default" }}
+          >
             <EventIcon size={48} />
           </div>
-          <h2 className={styles.eventTitle}>{event.summary || dict?.details?.untitled_event}</h2>
+          <h2 className={styles.eventTitle}>
+            {event.summary || dict?.details?.untitled_event}
+          </h2>
           <button
             className={styles.shareButton}
             onClick={handleShare}
-            title={dict?.details?.share_title}>
+            title={dict?.details?.share_title}
+          >
             <IoShareOutline size={22} />
           </button>
         </div>
@@ -283,7 +320,11 @@ export default function EventDetails({
           <div className={styles.detailRow}>
             <MdAccessTime size={24} />
             {isAllDay ? (
-              <span>{startDate == endDate ? `${startDate}` : `${startDate} → ${endDate}`}</span>
+              <span>
+                {startDate == endDate
+                  ? `${startDate}`
+                  : `${startDate} → ${endDate}`}
+              </span>
             ) : startDate == endDate ? (
               <span>
                 {startDate} | {startTime} - {endTime}
@@ -309,7 +350,8 @@ export default function EventDetails({
                 target: "_blank",
                 rel: "noopener noreferrer",
                 attributes: { className: styles.descriptionLink },
-              }}>
+              }}
+            >
               {settings.description}
             </Linkify>
           </div>
@@ -332,7 +374,9 @@ export default function EventDetails({
               <input
                 type="checkbox"
                 checked={settings.signupEnabled}
-                onChange={(e) => updateSetting("signupEnabled", e.target.checked)}
+                onChange={(e) =>
+                  updateSetting("signupEnabled", e.target.checked)
+                }
                 disabled={isProcessing}
               />
               <span>{dict?.details?.labels?.allow_signups}</span>
@@ -345,7 +389,9 @@ export default function EventDetails({
                   <input
                     type="datetime-local"
                     value={settings.signupDeadline}
-                    onChange={(e) => updateSetting("signupDeadline", e.target.value)}
+                    onChange={(e) =>
+                      updateSetting("signupDeadline", e.target.value)
+                    }
                     disabled={isProcessing}
                   />
                 </label>
@@ -356,7 +402,9 @@ export default function EventDetails({
                     type="number"
                     min="1"
                     value={settings.maxAttendees}
-                    onChange={(e) => updateSetting("maxAttendees", e.target.value)}
+                    onChange={(e) =>
+                      updateSetting("maxAttendees", e.target.value)
+                    }
                     placeholder={dict?.details?.placeholders?.no_limit}
                     disabled={isProcessing}
                   />
@@ -369,21 +417,23 @@ export default function EventDetails({
         <div className={styles.actionSection}>
           {isAdmin && subscriberCount > 0 && (
             <div className={styles.subscriberCount}>
-              {String(subscriberCount).padStart(2, "0")} {dict?.details?.labels?.subscribers}
+              {String(subscriberCount).padStart(2, "0")}{" "}
+              {dict?.details?.labels?.subscribers}
             </div>
           )}
 
           <button
             className={styles.signUpButton}
             onClick={handleSignUp}
-            disabled={isProcessing || !currentIstid}>
+            disabled={isProcessing || !currentIstid}
+          >
             {isProcessing
               ? dict?.details?.processing
               : !currentIstid
-              ? dict?.details?.please_login
-              : signedUp
-              ? dict?.details?.buttons?.cancel_signup
-              : dict?.details?.buttons?.sign_up}
+                ? dict?.details?.please_login
+                : signedUp
+                  ? dict?.details?.buttons?.cancel_signup
+                  : dict?.details?.buttons?.sign_up}
           </button>
           {isAdmin && subscriberCount > 0 && (
             <button onClick={handleEmailAttendees} className={styles.emailLink}>

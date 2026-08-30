@@ -13,9 +13,15 @@ export default async function AdminBodiesManagement() {
     <div className={styles.container}>
       <h2 className={styles.title}>{dict.admin.bodies_management.title}</h2>
       <div className={styles.card}>
-        <AdminBodiesSearchFilter initialAdminBodies={adminBodies} dict={dict.admin.bodies_management} />
+        <AdminBodiesSearchFilter
+          initialAdminBodies={adminBodies}
+          dict={dict.admin.bodies_management}
+        />
       </div>
-      <AddDepartmentModal departmentType="admin_body" dict={dict.admin.add_department_modal}/>
+      <AddDepartmentModal
+        departmentType="admin_body"
+        dict={dict.admin.add_department_modal}
+      />
     </div>
   );
 }

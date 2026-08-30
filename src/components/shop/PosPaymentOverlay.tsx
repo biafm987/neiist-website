@@ -6,8 +6,15 @@ import { MdClose } from "react-icons/md";
 import { toast } from "sonner";
 import ConfirmDialog from "@/components/layout/ConfirmDialog";
 import { Order } from "@/types/shop/order";
-import { PENDING_PAYMENT_METHODS, PaymentMethod, getPaymentLabel } from "@/types/shop/payment";
-import { getOrderKindRules, getOrderKindFromItems } from "@/utils/shop/orderKindUtils";
+import {
+  PENDING_PAYMENT_METHODS,
+  PaymentMethod,
+  getPaymentLabel,
+} from "@/types/shop/payment";
+import {
+  getOrderKindRules,
+  getOrderKindFromItems,
+} from "@/utils/shop/orderKindUtils";
 import type { SumUpReader } from "@/types/sumup";
 import PaymentProcessingSpinner from "@/components/shop/PaymentProcessingSpinner";
 import styles from "@/styles/components/shop/PosPaymentOverlay.module.css";
@@ -46,11 +53,15 @@ export default function PosPaymentOverlay({
 }: Props) {
   const router = useRouter();
   const d = dict.pos_payment;
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(initialPaymentMethod ?? "cash");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
+    initialPaymentMethod ?? "cash",
+  );
   const [paymentReference, setPaymentReference] = useState("");
   const [readers, setReaders] = useState<SumUpReader[]>([]);
   const [readersLoading, setReadersLoading] = useState(false);
-  const [selectedReaderId, setSelectedReaderId] = useState(initialReaderId ?? "");
+  const [selectedReaderId, setSelectedReaderId] = useState(
+    initialReaderId ?? "",
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState("");
@@ -75,23 +86,26 @@ export default function PosPaymentOverlay({
       readers.find((reader) => reader.id === selectedReaderId)?.name ||
       initialReaderName ||
       selectedReaderId,
-    [readers, selectedReaderId, initialReaderName]
+    [readers, selectedReaderId, initialReaderName],
   );
 
-  const { orderKind } = useMemo(() => getOrderKindFromItems(order.items), [order.items]);
+  const { orderKind } = useMemo(
+    () => getOrderKindFromItems(order.items),
+    [order.items],
+  );
 
   const availablePaymentMethods = useMemo(
     () =>
       getOrderKindRules(orderKind, "pos").paymentMethods.filter(
-        (method): method is Exclude<PaymentMethod, "in-person"> => method !== "in-person"
+        (method): method is Exclude<PaymentMethod, "in-person"> =>
+          method !== "in-person",
       ),
-    [orderKind]
+    [orderKind],
   );
 
   const isExistingOrderPaymentFlow = initialPaymentMethod
     ? PENDING_PAYMENT_METHODS.has(initialPaymentMethod)
     : false;
-  const title = isExistingOrderPaymentFlow ? "Registar Pagamento" : "Finalizar Encomenda";
 
   useEffect(() => {
     if (!open || paymentMethod !== "sumup-tpa") return;
@@ -102,13 +116,17 @@ export default function PosPaymentOverlay({
     fetch("/api/shop/sumup/readers", { cache: "no-store" })
       .then((response) => response.json())
       .then((data) => {
-        const nextReaders: SumUpReader[] = Array.isArray(data?.readers) ? data.readers : [];
+        const nextReaders: SumUpReader[] = Array.isArray(data?.readers)
+          ? data.readers
+          : [];
         setReaders(nextReaders);
 
         if (nextReaders.length > 0) {
           const preferredExists =
             !!initialReaderId &&
-            nextReaders.some((reader: SumUpReader) => reader.id === initialReaderId);
+            nextReaders.some(
+              (reader: SumUpReader) => reader.id === initialReaderId,
+            );
 
           if (preferredExists) {
             setSelectedReaderId(initialReaderId!);
@@ -132,7 +150,9 @@ export default function PosPaymentOverlay({
       initialPaymentMethod &&
       initialPaymentMethod !== "in-person" &&
       availablePaymentMethods.includes(initialPaymentMethod);
-    const preferredMethod = canUseInitialMethod ? initialPaymentMethod : defaultMethod;
+    const preferredMethod = canUseInitialMethod
+      ? initialPaymentMethod
+      : defaultMethod;
 
     setPaymentMethod(preferredMethod);
     setSelectedReaderId(initialReaderId ?? "");
@@ -152,7 +172,9 @@ export default function PosPaymentOverlay({
   }, [paymentMethod, open]);
 
   const refreshOrder = useCallback(async (): Promise<Order | null> => {
-    const res = await fetch(`/api/shop/orders/${order.id}`, { cache: "no-store" });
+    const res = await fetch(`/api/shop/orders/${order.id}`, {
+      cache: "no-store",
+    });
     if (!res.ok) return null;
 
     const data = (await res.json().catch(() => null)) as Order | null;
@@ -167,15 +189,16 @@ export default function PosPaymentOverlay({
         body: JSON.stringify(fields),
       });
 
-      const data = (await res.json().catch(() => null)) as { error?: string } | Order | null;
+      const data = (await res.json().catch(() => null)) as
+        { error?: string } | Order | null;
       if (!res.ok || !data || !("id" in data))
         throw new Error(
-          (data as { error?: string } | null)?.error || d.error_update_order
+          (data as { error?: string } | null)?.error || d.error_update_order,
         );
 
       return data;
     },
-    [order.id, d.error_update_order]
+    [order.id, d.error_update_order],
   );
 
   const finalizePaidOrder = useCallback(
@@ -187,7 +210,9 @@ export default function PosPaymentOverlay({
       });
 
       if (!res.ok) {
-        const errorData = (await res.json().catch(() => null)) as { error?: string } | null;
+        const errorData = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
         throw new Error(errorData?.error || d.error_mark_paid);
       }
 
@@ -196,19 +221,19 @@ export default function PosPaymentOverlay({
 
       return data;
     },
-    [order.id, d.error_mark_paid]
+    [order.id, d.error_mark_paid],
   );
 
   const pollReaderTransactionPaid = useCallback(
     async (
-      clientTransactionId: string
+      clientTransactionId: string,
     ): Promise<{ paid: boolean; transactionCode: string | null }> => {
       const startedAt = Date.now();
 
       while (isMountedRef.current && Date.now() - startedAt < 90_000) {
         const txRes = await fetch(
           `/api/shop/sumup/transactions/status?clientTransactionId=${encodeURIComponent(clientTransactionId)}`,
-          { cache: "no-store" }
+          { cache: "no-store" },
         );
         const txData = (await txRes.json().catch(() => null)) as {
           paid?: boolean;
@@ -218,16 +243,22 @@ export default function PosPaymentOverlay({
         } | null;
 
         if (txRes.ok && txData?.paid)
-          return { paid: true, transactionCode: txData.transactionCode ?? null };
+          return {
+            paid: true,
+            transactionCode: txData.transactionCode ?? null,
+          };
 
         const latestOrder = await refreshOrder();
-        if (latestOrder && ["paid", "ready", "delivered"].includes(latestOrder.status))
+        if (
+          latestOrder &&
+          ["paid", "ready", "delivered"].includes(latestOrder.status)
+        )
           return { paid: true, transactionCode: null };
 
         setStatusMessage(
           txData?.status
             ? `Leitor ${selectedReaderName}: ${String(txData.status).toLowerCase()}`
-            : d.awaiting_terminal
+            : d.awaiting_terminal,
         );
 
         await sleep(2500);
@@ -235,7 +266,7 @@ export default function PosPaymentOverlay({
 
       return { paid: false, transactionCode: null };
     },
-    [refreshOrder, selectedReaderName, d.awaiting_terminal]
+    [refreshOrder, selectedReaderName, d.awaiting_terminal],
   );
 
   const runTpaFlow = useCallback(async (): Promise<Order | null> => {
@@ -249,7 +280,7 @@ export default function PosPaymentOverlay({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId: order.id }),
-      }
+      },
     );
 
     const createData = (await createRes.json().catch(() => null)) as {
@@ -268,10 +299,13 @@ export default function PosPaymentOverlay({
 
         if (existingClientTransactionId) {
           setStatusMessage(d.checkout_started);
-          const pollResult = await pollReaderTransactionPaid(existingClientTransactionId);
+          const pollResult = await pollReaderTransactionPaid(
+            existingClientTransactionId,
+          );
 
           if (pollResult.paid) {
-            const paymentReference = pollResult.transactionCode || existingClientTransactionId;
+            const paymentReference =
+              pollResult.transactionCode || existingClientTransactionId;
             await updateOrderFields({
               payment_method: "sumup-tpa",
               payment_reference: paymentReference,
@@ -294,10 +328,13 @@ export default function PosPaymentOverlay({
     }
 
     setStatusMessage(d.payment_sent);
-    const pollResult = await pollReaderTransactionPaid(createData.clientTransactionId);
+    const pollResult = await pollReaderTransactionPaid(
+      createData.clientTransactionId,
+    );
 
     if (pollResult.paid) {
-      const paymentReference = pollResult.transactionCode || createData.clientTransactionId;
+      const paymentReference =
+        pollResult.transactionCode || createData.clientTransactionId;
       await updateOrderFields({
         payment_method: "sumup-tpa",
         payment_reference: paymentReference,
@@ -341,11 +378,13 @@ export default function PosPaymentOverlay({
       } else if (paymentMethod === "mbway") {
         const mbwayRef = order.mbway_number?.trim() ?? "";
         if (!mbwayRef) throw new Error("MBWay number missing for this order");
-        await updateOrderFields({ payment_method: "mbway", payment_reference: mbwayRef });
+        await updateOrderFields({
+          payment_method: "mbway",
+          payment_reference: mbwayRef,
+        });
         updated = await finalizePaidOrder(mbwayRef);
       } else if (paymentMethod === "other") {
-        if (!paymentReference.trim())
-          throw new Error(d.fill_reference);
+        if (!paymentReference.trim()) throw new Error(d.fill_reference);
 
         const ref = paymentReference.trim();
         await updateOrderFields({
@@ -432,13 +471,18 @@ export default function PosPaymentOverlay({
   if (!open) return null;
 
   const paymentNeedsConfirmation =
-    paymentMethod === "cash" || paymentMethod === "other" || paymentMethod === "mbway";
+    paymentMethod === "cash" ||
+    paymentMethod === "other" ||
+    paymentMethod === "mbway";
   const confirmationMessage =
     paymentMethod === "cash"
       ? d.confirm_cash
       : paymentMethod === "mbway"
-        ? (d.confirm_mbway)
-        : d.confirm_reference.replace("{reference}", paymentReference.trim() || "-");
+        ? d.confirm_mbway
+        : d.confirm_reference.replace(
+            "{reference}",
+            paymentReference.trim() || "-",
+          );
 
   if (flowState === "processing" || flowState === "success") {
     return (
@@ -466,19 +510,23 @@ export default function PosPaymentOverlay({
   }
 
   return (
-    <div className={styles.backdrop} onClick={(e) => e.target === e.currentTarget && handleClose()}>
+    <div
+      className={styles.backdrop}
+      onClick={(e) => e.target === e.currentTarget && handleClose()}
+    >
       <div className={styles.modal}>
         <button
           className={styles.closeButton}
           type="button"
           onClick={handleClose}
-          aria-label={d.close_label}>
+          aria-label={d.close_label}
+        >
           <MdClose size={20} />
         </button>
 
         <h3 className={styles.title}>
-          {isExistingOrderPaymentFlow 
-            ? (d.title_register_payment)
+          {isExistingOrderPaymentFlow
+            ? d.title_register_payment
             : d.title.replace("{number}", order.order_number)}
         </h3>
 
@@ -490,7 +538,8 @@ export default function PosPaymentOverlay({
             className={styles.input}
             value={paymentMethod}
             onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-            disabled={isSubmitting || lockPaymentMethod}>
+            disabled={isSubmitting || lockPaymentMethod}
+          >
             {availablePaymentMethods.map((method) => (
               <option key={method} value={method}>
                 {methodLabel(method)}
@@ -514,7 +563,8 @@ export default function PosPaymentOverlay({
         )}
         {paymentMethod === "mbway" && order.payment_method !== "mbway" && (
           <div className={styles.label}>
-            {d.mbway_send_to} <strong>{order.mbway_number || d.mbway_number_unavailable}</strong>
+            {d.mbway_send_to}{" "}
+            <strong>{order.mbway_number || d.mbway_number_unavailable}</strong>
           </div>
         )}
 
@@ -523,7 +573,13 @@ export default function PosPaymentOverlay({
             <label className={styles.label} htmlFor="sumup-reader-select">
               {d.reader_label}
               {readersLoading ? (
-                <span style={{ fontSize: "0.95em", color: "#6b7280", marginLeft: 8 }}>
+                <span
+                  style={{
+                    fontSize: "0.95em",
+                    color: "#6b7280",
+                    marginLeft: 8,
+                  }}
+                >
                   {d.loading_readers}
                 </span>
               ) : null}
@@ -533,7 +589,8 @@ export default function PosPaymentOverlay({
               className={styles.input}
               value={selectedReaderId}
               onChange={(e) => setSelectedReaderId(e.target.value)}
-              disabled={readersLoading || isSubmitting}>
+              disabled={readersLoading || isSubmitting}
+            >
               <option value="">{d.select_reader}</option>
               {readers.map((reader: SumUpReader) => (
                 <option key={reader.id} value={reader.id}>
@@ -549,7 +606,8 @@ export default function PosPaymentOverlay({
             type="button"
             className={styles.cancelButton}
             onClick={handleClose}
-            disabled={isSubmitting}>
+            disabled={isSubmitting}
+          >
             {d.cancel}
           </button>
           <button
@@ -563,7 +621,8 @@ export default function PosPaymentOverlay({
 
               void handleConfirm();
             }}
-            disabled={isSubmitting}>
+            disabled={isSubmitting}
+          >
             {d.confirm_btn.replace("{method}", methodLabel(paymentMethod))}
           </button>
         </div>
