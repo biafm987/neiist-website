@@ -9,6 +9,7 @@ import "swiper/css";
 import "swiper/css/navigation";
 import styles from "@/styles/components/homepage/Activities.module.css";
 import { Event } from "@/types/events";
+import type { ActivitiesDict } from "@/types/i18n";
 import aoc from "@/assets/events/aoc.jpg";
 import esports from "@/assets/events/esports.jpg";
 import sweats from "@/assets/events/sweats.jpg";

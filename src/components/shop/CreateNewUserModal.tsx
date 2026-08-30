@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import styles from "@/styles/components/shop/CreateNewUserModal.module.css";
 import { MdClose } from "react-icons/md";
 import type { User } from "@/types/user";
+import type { CreateNewUserModalDict } from "@/types/i18n";
 import ConfirmDialog from "@/components/layout/ConfirmDialog";
 
 interface CreateNewUserModalProps {

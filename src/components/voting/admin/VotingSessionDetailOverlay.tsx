@@ -191,6 +191,7 @@ export default function VotingSessionDetailOverlay({
           await handleStartVoting();
         }}
         onCancel={() => setPendingAction(null)}
+        dict={{ confirm: "Confirmar", cancel: "Cancelar" }}
       />
 
       <ConfirmDialog
@@ -201,6 +202,7 @@ export default function VotingSessionDetailOverlay({
           await handleFinishVoting();
         }}
         onCancel={() => setPendingAction(null)}
+        dict={{ confirm: "Confirmar", cancel: "Cancelar" }}
       />
 
       <ConfirmDialog
@@ -211,6 +213,7 @@ export default function VotingSessionDetailOverlay({
           await handleDelete();
         }}
         onCancel={() => setPendingAction(null)}
+        dict={{ confirm: "Confirmar", cancel: "Cancelar" }}
       />
     </div>
   );

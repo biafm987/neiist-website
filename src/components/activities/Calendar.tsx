@@ -7,6 +7,7 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import EventDetails from "@/components/activities/EventDetails";
 import { normalizeCalendarEvent } from "@/utils/calendarUtils";
 import type { NormalizedCalendarEvent, CalendarEvent } from "@/types/events";
+import type { CalendarDict } from "@/types/i18n";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import * as FA from "react-icons/fa";
 import * as MD from "react-icons/md";

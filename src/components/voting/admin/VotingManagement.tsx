@@ -16,12 +16,25 @@ import DateFilter from "@/components/shop/DateFilter";
 import ActiveFilters from "@/components/shop/ActiveFilters";
 import MobileFiltersDrawer from "@/components/shop/MobileFiltersDrawer";
 import ColorfulText from "@/components/ColorfulText";
+import type {
+  ActiveFiltersDict,
+  ConfirmDialogDict,
+  DateFilterDict,
+  MobileFiltersDrawerDict,
+} from "@/types/i18n";
 import styles from "@/styles/components/voting/admin/VotingManagement.module.css";
 
 interface VotingManagementProps {
   initialSessions: VotingSession[];
   activities: CalendarEvent[];
   users: User[];
+  locale?: string;
+  dict?: {
+    active_filters: ActiveFiltersDict;
+    date_filter: DateFilterDict;
+    mobile_filters_drawer: MobileFiltersDrawerDict;
+    confirm_dialog: ConfirmDialogDict;
+  };
 }
 
 interface FilterState {
@@ -30,7 +43,43 @@ interface FilterState {
   status: VotingStatus[];
 }
 
-export default function VotingManagement({ initialSessions }: VotingManagementProps) {
+export default function VotingManagement({
+  initialSessions,
+  locale = "pt-PT",
+  dict = {
+    active_filters: {
+      label: "Filtros ativos",
+      clear_all: "Limpar tudo",
+      from: "De",
+      until: "Até",
+      remove_date_range: "Remover intervalo de datas",
+      remove_filter: "Remover filtro",
+    },
+    date_filter: {
+      title: "Data",
+      until: "Até data",
+      range: "Intervalo",
+      days: ["D", "S", "T", "Q", "Q", "S", "S"],
+    },
+    mobile_filters_drawer: {
+      title: "Filtros",
+      close_label: "Fechar filtros",
+      date_section: "Data",
+      until: "Até data",
+      range: "Intervalo",
+      days: ["D", "S", "T", "Q", "Q", "S", "S"],
+      products_section: "Produtos",
+      campus_section: "Campus",
+      status_section: "Estado",
+      clear_all: "Limpar tudo",
+      apply: "Aplicar",
+    },
+    confirm_dialog: {
+      confirm: "Confirmar",
+      cancel: "Cancelar",
+    },
+  },
+}: VotingManagementProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
@@ -141,6 +190,8 @@ export default function VotingManagement({ initialSessions }: VotingManagementPr
               }));
             }}
             onClearAll={handleClearAll}
+            dict={dict.active_filters}
+            locale={locale}
           />
         </div>
 
@@ -167,6 +218,8 @@ export default function VotingManagement({ initialSessions }: VotingManagementPr
           dateRange={filters.dateRange}
           onChange={(range) => setFilters((p) => ({ ...p, dateRange: range }))}
           buttonRef={dateFilterRef}
+          dict={dict.date_filter}
+          locale={locale}
         />
       )}
 
@@ -220,6 +273,8 @@ export default function VotingManagement({ initialSessions }: VotingManagementPr
             getLabel: (s) => STATUS_LABELS[s as VotingStatus],
           },
         ]}
+        dict={dict.mobile_filters_drawer}
+        locale={locale}
       />
     </>
   );

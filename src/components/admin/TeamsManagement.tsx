@@ -2,7 +2,6 @@ import TeamsSearchFilter from "@/components/admin/TeamsSearchFilter";
 import AddDepartmentModal from "@/components/admin/AddDepartmentModal";
 import styles from "@/styles/components/admin/TeamsManagement.module.css";
 import { getLocale, getDictionary } from "@/lib/i18n";
-import { getLocale, getDictionary } from "@/lib/i18n";
 import { getAllTeams } from "@/utils/db/userQueries";
 
 export default async function TeamsManagement() {
